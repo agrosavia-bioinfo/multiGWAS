@@ -1,0 +1,7 @@
+export MULTIGWAS_HOME=/home/lg/agrosavia/development/multiGWAS
+
+MULTIGWAS_TOOLS=$MULTIGWAS_HOME/tools
+
+export TASSEL_HOME=$MULTIGWAS_TOOLS
+
+export PATH=$PATH:$MULTIGWAS_TOOLS
