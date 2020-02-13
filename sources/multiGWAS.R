@@ -11,7 +11,7 @@
 	# r8.0: Full summary, reorganized scores tables, checked scores/thresholds, two correction methods: FDR, BONF. 
 
 # Constants
-DEBUG              = F
+DEBUG              = T
 LOAD_DATA          = FALSE
 SIGNIFICANCE_LEVEL = 0.05      # Minimun level of significance (alpha) to considerer a significant SNP
 MAX_BEST           = 8         # Max number of SNPs of best scored SNPs to show in tables and graphics
@@ -38,9 +38,9 @@ suppressMessages(library (config))  # For read config file
 setClass ("GWASpolyStruct", slots=c(params="list"), contains="GWASpoly.K")
 
 options (width=300)
-source (paste0 (HOME, "/libs/gwas-preprocessing.R"))     # Module with functions to convert between different genotype formats 
-source (paste0 (HOME, "/libs/gwas-summary.R"))           # Module with functions to create summaries: tables and venn diagrams
-source (paste0 (HOME, "/scripts/gwaspoly.R"))       # Module with gwaspoly functions
+source (paste0 (HOME, "/sources/gwas-preprocessing.R"))     # Module with functions to convert between different genotype formats 
+source (paste0 (HOME, "/sources/gwas-summary.R"))           # Module with functions to create summaries: tables and venn diagrams
+source (paste0 (HOME, "/sources/scripts/script-gwaspoly.R"))       # Module with gwaspoly functions
 
 #-------------------------------------------------------------
 # Global configs
@@ -189,15 +189,15 @@ runPlinkGwas <- function (params)
 	outPlink = paste0(outFile,".TRAIT.assoc.linear.adjusted")
 
 	if (model=="Naive") 
-		cmm=sprintf ("%s/scripts/plink-Naive.sh %s %s %s", HOME,inGeno, inPheno, outFile)
+		cmm=sprintf ("%s/sources/scripts/script-plink-NaiveModel.sh %s %s %s", HOME,inGeno, inPheno, outFile)
 	else if (model=="Structure") {
 		# First: kinship filtering
 		outPrefixKinFile  = "out/out-King"
-		cmm=sprintf ("%s/scripts/kin-kinship.sh %s %s", HOME, inGeno, outFile)
+		cmm=sprintf ("%s/sources/scripts/script-kin-kinship.sh %s %s", HOME, inGeno, outFile)
 		runCommand (cmm, "log-Kin.log")
 
 		# Second: Structure by PCs 
-		cmm=sprintf ("%s/scripts/plink-Structure-PCs.sh %s %s %s", HOME, inGeno, inPheno, outFile)
+		cmm=sprintf ("%s/sources/scripts/script-plink-FullModel %s %s %s", HOME, inGeno, inPheno, outFile)
 	}
 	else
 		quit (paste ("Type of GWAS:\"", model, "\", not supported"))
@@ -241,7 +241,7 @@ runShesisGwas <- function (params)
 	outShesis    = paste0(outFile,".txt")
 	scoresFile   = paste0(outFile,".scores")
 
-	cmm=sprintf ("%s/scripts/shesis-Naive.sh %s %s %s", HOME, inGenoPheno, inMarkers, outFile)
+	cmm=sprintf ("%s/sources/scripts/script-shesis-NaiveModel.sh %s %s %s", HOME, inGenoPheno, inMarkers, outFile)
 	runCommand (cmm, "log-Shesis.log")
 
 	# Format data to table with scores and threshold
@@ -276,12 +276,12 @@ runTasselGwas <- function (params)
 	outPrefix  = paste0("out/out-Tassel-", model)
 
 	if (model=="Naive") {
-		cmm=sprintf ("%s/scripts/tassel-pipeline-GLM-Naive.sh %s %s %s %s",
+		cmm=sprintf ("%s/sources/scripts/script-tassel-NaiveModel.sh %s %s %s %s",
 					 HOME,inGenoPED, inGenoMAP, inPhenoTBL, outPrefix)
 		runCommand (cmm, "log-tassel.log")
 		outFile   = list.files("out/", pattern=sprintf("^(.*(%s).*(1).*(txt)[^$]*)$",model), full.names=T)
 	}else if (model=="Structure") {
-		cmm=sprintf ("%s/scripts/tassel-pipeline-MLM-Kinship_PCs.sh %s %s %s %s",
+		cmm=sprintf ("%s/sources/scripts/script-tassel-FullModel.sh %s %s %s %s",
 					 HOME, inGenoPED, inGenoMAP, inPhenoTBL, outPrefix)
 		runCommand (cmm, "log-tassel.log")
 		outFile   = list.files("out/", pattern=sprintf("^(.*(%s).*(stats).*(txt)[^$]*)$",model), full.names=T)

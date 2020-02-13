@@ -8,7 +8,7 @@ GENOPED=$1
 GENOMAP=$2
 PHENOTBL=$3
 OUTFILE=$4
-$TASSEL_HOME/run_pipeline.pl \
+$MULTIGWAS_HOME/tools/run_pipeline.pl \
 	-fork1 -plink -ped $GENOPED -map $GENOMAP \
 	-fork2 -r $PHENOTBL \
 	-combine3 -input1 -input2 -intersect \
