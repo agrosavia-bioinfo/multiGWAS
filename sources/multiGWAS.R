@@ -11,7 +11,7 @@
 	# r8.0: Full summary, reorganized scores tables, checked scores/thresholds, two correction methods: FDR, BONF. 
 
 # Constants
-DEBUG              = T
+DEBUG              = F
 LOAD_DATA          = FALSE
 SIGNIFICANCE_LEVEL = 0.05      # Minimun level of significance (alpha) to considerer a significant SNP
 MAX_BEST           = 8         # Max number of SNPs of best scored SNPs to show in tables and graphics
