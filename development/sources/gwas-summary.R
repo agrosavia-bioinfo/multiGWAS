@@ -1,10 +1,12 @@
 #!/usr/bin/Rscript
-## Log: 
-##      r2.0: Improve selection of data from tables. Titles to graphics and files
-##      r1.0: Message to log files
-##      r0.9: Full working with funtions: create tables and ven diagrams using parameters
-##      r0.8: Create venn diagrams, summary table of first Ns"
-##     
+# INFO   : Functios to summarize results from the different tools
+# AUTHOR : Luis Garreta (lgarreta@agrosavia.co)
+# DATE   : Feb/2020
+# LOG: 
+#      r2.0: Improve selection of data from tables. Titles to graphics and files
+#      r1.0: Message to log files
+#      r0.9: Full working with funtions: create tables and ven diagrams using parameters
+#      r0.8: Create venn diagrams, summary table of first Ns"
 
 library (stringr)
 library (dplyr)

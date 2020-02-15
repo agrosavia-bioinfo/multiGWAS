@@ -8,26 +8,8 @@
 
 library (stringr)
 library (dplyr)
-library(qqman)
-
 options (width=300)
 #options(scipen=999)
-
-#------------------------------------------------------------------------
-#------------------------------------------------------------------------
-#markersSummaryTable <- function (inputDir, gwasType, title="", outDir="out", nBEST=5, significanceLevel=0.05, correctionMethod="FDR") {
-markersManhattanPlots <- function (inputDir, gwasType) {
-
-	files =  list.files(inputDir, pattern=paste0("^(.*(",gwasType,").*(scores)[^$]*)$"), full.names=T)
-	for (f in files) {
-		data <- read.table (file=f, header=T)
-		hd (data)
-		gwasResults = na.omit (data[,c("SNP", "CHR", "POS", "P")])
-		hd (gwasResults)
-		manhattan(gwasResults,col = c("blue4", "orange3"),  snp="SNP", chr="CHR", bp="POS", p="P")
-	}
-}
-
 
 #------------------------------------------------------------------------
 # Create Venn diagram of common markers using info from summary table
@@ -124,13 +106,10 @@ markersSummaryTable <- function (inputDir, gwasType, title="", outDir="out", nBE
 	msg ("Writting summary results to ", outName, "...")
 	write.table (file=paste0(outName,".scores"), summaryTable, row.names=F,quote=F, sep="\t")
 	markersVennDiagrams (summaryTable, paste0("Best",nBEST), title, outDir)
-
 	summarySignificatives = summaryTable %>% filter (SIGNF%in%T) 
 	outName = paste0(outDir, "/out-summary-gwas-signficatives.scores")
 	write.table (file=outName, summarySignificatives, row.names=F,quote=F, sep="\t")
 	markersVennDiagrams (summarySignificatives, "Significatives", title, outDir)
-
-	markersManhattanPlots (inputDir, gwasType)
 
 	return (summaryTable)
 }

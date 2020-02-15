@@ -11,7 +11,7 @@
 	# r8.0: Full summary, reorganized scores tables, checked scores/thresholds, two correction methods: FDR, BONF. 
 
 # Constants
-DEBUG              = T
+DEBUG              = F
 LOAD_DATA          = FALSE
 SIGNIFICANCE_LEVEL = 0.05      # Minimun level of significance (alpha) to considerer a significant SNP
 MAX_BEST           = 8         # Max number of SNPs of best scored SNPs to show in tables and graphics
@@ -74,9 +74,9 @@ main <- function (args)
 
 	# Run the four tools in parallel
 	#runPlinkGwas (config)
+	#runShesisGwas (config)
 	#runGwaspolyGwas (config)
-	runShesisGwas (config)
-	#mclapply (c("Gwasp", "Plink", "Shesis", "Tassel"), runGWASTools, config, mc.cores=4)
+	mclapply (c("Gwasp", "Plink", "Shesis", "Tassel"), runGwasTool, config, mc.cores=4)
 
 	# Create outputs: tables, figures
 	title = gsub(".*\\config-(.*)\\..*", "\\1", c(configFile))
@@ -127,7 +127,7 @@ moveOutFiles <- function (outDir)
 #-------------------------------------------------------------
 # Used to run in parallel the other functions
 #-------------------------------------------------------------
-runGWASTools <- function (tool, config) 
+runGwasTool <- function (tool, config) 
 {
 	if (tool=="Gwasp")
 		runGwaspolyGwas (config)
@@ -237,7 +237,6 @@ runShesisGwas <- function (params)
 
 	inGenoPheno  = "out/filtered-shesis-genopheno.tbl"
 	inMarkers    = "out/filtered-shesis-markernames.tbl"
-	inMarkersPos = "out/filtered-shesis-markernamespos.tbl"
 	outFile      = paste0 ("out/out-Shesis-", model)
 	outShesis    = paste0(outFile,".txt")
 	scoresFile   = paste0(outFile,".scores")
@@ -246,25 +245,18 @@ runShesisGwas <- function (params)
 	runCommand (cmm, "log-Shesis.log")
 
 	# Format data to table with scores and threshold
-	results = read.table (file=scoresFile, header=T, sep="\t")
-	pValues = results[,"P.value"]
+	results <- read.table (file=scoresFile, header=T, sep="\t")
+	pValues       = results[,"P.value"]
 	if (params$correctionMethod=="FDR") {
-		scores    <- -log10(p.adjust (pValues, method="fdr"))
-		threshold <- calculateThreshold (level=SIGNIFICANCE_LEVEL, scores=scores, method="FDR")
+		scores       <- -log10(p.adjust (pValues, method="fdr"))
+		threshold    <- calculateThreshold (level=SIGNIFICANCE_LEVEL, scores=scores, method="FDR")
 	}else {
-		nMiss     = results [results$SNP, "Nonmissing"]
+		nMiss     <- results [results$SNP, "Nonmissing"]
 		threshold = -log10 (SIGNIFICANCE_LEVEL/nMiss)
 		scores    = -log10 (nMiss*pValues)
 	}
-	inMarkersPosData = read.table (file=inMarkersPos, header=T, sep="\t")
-	SNP = results$SNP
-	msg ("BEF")
-	CHR = inMarkersPosData [SNP, 2]
-	POS = inMarkersPosData [SNP, 3]
 
-	resultsAll <- data.frame (SNP, CHR, POS, P=pValues, SCORE=round (scores,6), THRESHOLD=round (threshold,6), DIFF=round (scores-threshold, 6), results)
-	hd (resultsAll)
-	msg ("AFT")
+	resultsAll <- cbind (results, P=pValues, SCORE=round (scores,6), THRESHOLD=round (threshold,6), DIFF=round (scores-threshold, 6))
 	resultsAll <- resultsAll [order (resultsAll$DIFF, decreasing=T),]
 	write.table (file=scoresFile, resultsAll, row.names=F, quote=F, sep="\t")
 }

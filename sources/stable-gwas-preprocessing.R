@@ -185,15 +185,14 @@ gwaspToShesisGenoPheno <- function (genotypeFile, phenotypeFile)
 	geno    <- read.csv (file=genotypeFile, stringsAsFactors=F, check.names=F)
 	pheno   <- read.csv (file=phenotypeFile, stringsAsFactors=F, check.names=F)
 	rownames (pheno) <- pheno [,1]
-	map        <- geno  [,c(1,2,3)]    # Get SNP, Cromosome, Position
-	rownames (geno)  <- map [,1] 
-
+	rownames (geno)  <- geno [,1]
 
 	alleles    <- geno[,-c(1,2,3)]
 	alleles [is.na(alleles)] = "0000"
 	allelesMat <- t(sapply (alleles, sep))
 
 	samples         = rownames (allelesMat)
+	markers         = colnames (allelesMat)
 	pheno           = pheno [samples,]
 	pheno [,2]      = impute.mode (pheno [,2])
 	genoPhenoShesis = data.frame (Sample=pheno[,1], Trait=pheno[,2],  allelesMat)
@@ -204,9 +203,7 @@ gwaspToShesisGenoPheno <- function (genotypeFile, phenotypeFile)
 
 	msg ("    >>>> Writing shesis marker names...")
 	outFile = "out/filtered-shesis-markernames.tbl"
-	write.table (file=outFile, map[,1], quote=F,row.names=F,col.names=F, sep="\t")
-	outFile = "out/filtered-shesis-markernamespos.tbl"
-	write.table (file=outFile, map, quote=F,row.names=F,col.names=F, sep="\t")
+	write.table (file=outFile, rownames(geno), quote=F,row.names=F,col.names=F, sep="\t")
 }
 
 #----------------------------------------------------------
