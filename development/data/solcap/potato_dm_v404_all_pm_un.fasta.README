@@ -1,0 +1,5 @@
+Genome Assemblies (FASTA Format)
+
+    The Buell lab at Michigan State have created a new pseudomolecule (chrUn) created from assembled DM reads that did not map to v4.03 and released it with the v4.03 chr00-chr12 pseudomolecules as v4.04. The pseudomolecules chr00-chr12 remain the same as v4.03. The v4.04 FASTA file can be downloaded below or searched on the SpudDB BLAST server. More details about the construction of chrUn can be found in the paper by Hardigan et al. (2016).
+    DM_v4.04_pseudomolecules.fasta.zip -
+    S. tuberosum Group Phureja DM1-3 Assembly Version 3 DM, Version 4.04 Pseudomolecule Sequence 
