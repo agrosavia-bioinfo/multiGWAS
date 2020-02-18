@@ -1,17 +1,71 @@
 #!/usr/bin/Rscript
-# INFO   : Functios to summarize results from the different tools
-# AUTHOR : Luis Garreta (lgarreta@agrosavia.co)
-# DATE   : Feb/2020
-# LOG: 
-#      r2.0: Improve selection of data from tables. Titles to graphics and files
-#      r1.0: Message to log files
-#      r0.9: Full working with funtions: create tables and ven diagrams using parameters
-#      r0.8: Create venn diagrams, summary table of first Ns"
+## Log: 
+##      r2.0: Improve selection of data from tables. Titles to graphics and files
+##      r1.0: Message to log files
+##      r0.9: Full working with funtions: create tables and ven diagrams using parameters
+##      r0.8: Create venn diagrams, summary table of first Ns"
+##     
 
 library (stringr)
 library (dplyr)
+library(qqman)
+
 options (width=300)
 #options(scipen=999)
+
+#-------------------------------------------------------------
+# Calculate the inflation factor from -log10 values
+#-------------------------------------------------------------
+calculateInflationFactor <- function (scores)
+{
+	remove <- which(is.na(scores))
+	if (length(remove)>0) 
+		x <- sort(scores[-remove],decreasing=TRUE)
+	else 
+		x <- sort(scores,decreasing=TRUE)
+
+	pvalues = 10^-x
+	chisq <- na.omit (qchisq(1-pvalues,1))
+	delta  = round (median(chisq)/qchisq(0.5,1), 3)
+
+	return (list(delta=delta, scores=x))
+}
+
+#------------------------------------------------------------------------
+#------------------------------------------------------------------------
+#markersSummaryTable <- function (inputDir, gwasType, title="", outDir="out", nBEST=5, significanceLevel=0.05, correctionMethod="FDR") {
+markersManhattanPlots <- function (inputDir, gwasType, commonBest, commonSign) {
+	files =  list.files(inputDir, pattern=paste0("^(.*(",gwasType,").*(scores)[^$]*)$"), full.names=T)
+	pdf ("out-qqman.pdf", width=15, height=7)
+	op <- par(mfcol = c(2,4), oma=c(0,0,0,0))
+	for (filename in files) {
+		data           = na.omit (read.table (file=filename, header=T))
+		thresholdScore = data [1,c("THRESHOLD")]
+		threshold      = 10^-thresholdScore
+			names = unlist (strsplit (basename (filename), "[-|.]"))
+			mainTitle = paste0 (names[2],"-", names [3])
+
+			if (grepl ("GWASpoly", filename)) {
+				data = data [data[,"Model"] %in% "additive",]
+				gwasResults = data.frame (SNP=data$Marker, CHR=data$Chrom, BP=data$Position, P=10^-data$SCORE)
+			}
+			else if (grepl ("SHEsis", filename)) 
+				gwasResults = data.frame (SNP=data$SNP, CHR=data$CHR, BP=data$POS, P=10^-data$SCORE)
+			else if (grepl ("Plink", filename)) 
+				gwasResults = data.frame (SNP=data$SNP, CHR=data$CHR, BP=data$POS, P=10^-data$SCORE)
+			else if (grepl ("Tassel", filename)) 
+				gwasResults = data.frame (SNP=data$Marker, CHR=data$Chr, BP=data$Pos, P=10^-data$SCORE)
+
+			colorsBlueOrange = c("blue4", "orange3")
+			manhattan(gwasResults,col = c("gray10", "gray60"), highlight=commonBest, annotatePval=threshold, annotateTop=F,
+					  suggestiveline=thresholdScore, genomewideline=T, main=mainTitle, logp=T)
+			datax = calculateInflationFactor (-log10 (gwasResults$P))
+			qq (gwasResults$P)
+			title (bquote(lambda[GC] == .(datax$delta)))
+	}
+	par (op)
+	dev.off()
+}
 
 #------------------------------------------------------------------------
 # Create Venn diagram of common markers using info from summary table
@@ -21,14 +75,16 @@ markersVennDiagrams <- function (summaryTable, scoresType, title="", outDir="out
 	st <<-summaryTable
 	flog.threshold(ERROR)
 	x <- list()
-	x$Gwaspoly = summaryTable %>% filter (TOOL %in% "Gwaspoly") %>% select (SNP) %>% .$SNP
-	x$Shesis = summaryTable %>% filter (TOOL %in% "Shesis") %>% select (SNP) %>% .$SNP
-	x$Plink  = summaryTable %>% filter (TOOL %in% "Plink")  %>% select (SNP) %>% .$SNP
-	x$Tassel = summaryTable %>% filter (TOOL %in% "Tassel") %>% select (SNP) %>% .$SNP
+	x$GWASpoly = summaryTable %>% filter (TOOL %in% "GWASpoly") %>% select (SNP) %>% .$SNP
+	x$SHEsis   = summaryTable %>% filter (TOOL %in% "SHEsis") %>% select (SNP) %>% .$SNP
+	x$Plink    = summaryTable %>% filter (TOOL %in% "Plink")  %>% select (SNP) %>% .$SNP
+	x$Tassel   = summaryTable %>% filter (TOOL %in% "Tassel") %>% select (SNP) %>% .$SNP
+
+	commonSNPs = intersect (intersect (x$GWASpoly, x$SHEsis), intersect(x$Plink, x$Tassel))
 
 	mainTitle = paste0(title, "-", scoresType)
 	msg();msg (mainTitle);msg()
-	v0 <-venn.diagram(x, height=12000, width=12000, alpha = 0.5, filename = NULL, main=mainTitle,
+	v0 <- venn.diagram(x, height=12000, width=12000, alpha = 0.5, filename = NULL, main=mainTitle,
 						col = c("red", "blue", "green", "yellow"), cex=0.9,
 						fill = c("red", "blue", "green", "yellow")) 
 
@@ -44,12 +100,15 @@ markersVennDiagrams <- function (summaryTable, scoresType, title="", outDir="out
 	pdf(paste0(outDir,"/out-summary-gwas-venndiagram-", scoresType, ".pdf"))
 	grid.draw(v0)
 	dev.off()
+
+	return (commonSNPs)
 }
 
 #------------------------------------------------------------------------
 # Create a summary table of best and significative markers
 #------------------------------------------------------------------------
 markersSummaryTable <- function (inputDir, gwasType, title="", outDir="out", nBEST=5, significanceLevel=0.05, correctionMethod="FDR") {
+	print (getwd())
 	map = read.table (file="out/map.tbl")
 	rownames (map) = map [,1]
 
@@ -60,7 +119,9 @@ markersSummaryTable <- function (inputDir, gwasType, title="", outDir="out", nBE
 	tool=""
 	msg ("Max number of best scored SNPs:", nBEST)
 	msg ("Tools:")
+	print (files)
 	for (f in files) {
+		msg ("Tool file: ", f)
 		data <- read.table (file=f, header=T)
 		if (nrow(data)>nBEST) data=data [1:nBEST,] 
 		pVal	<- data$P
@@ -69,8 +130,8 @@ markersSummaryTable <- function (inputDir, gwasType, title="", outDir="out", nBE
 		signf   = pscores >= tscores
 
 		flagNewData = F
-		if (str_detect(f, "Gwaspoly")) {
-			tool    = "Gwaspoly"
+		if (str_detect(f, "GWASpoly")) {
+			tool    = "GWASpoly"
 			snps    <- data$Marker
 			chrom   <- data$Chrom
 			pos	    <- data$Position
@@ -87,8 +148,8 @@ markersSummaryTable <- function (inputDir, gwasType, title="", outDir="out", nBE
 			chrom   = data$Chr
 			pos		= data$Pos
 			flagNewData = T
-		}else if (str_detect (f, "Shesis")) {
-			tool    = "Shesis"
+		}else if (str_detect (f, "SHEsis")) {
+			tool    = "SHEsis"
 			snps    = data$SNP
 			chrom	= map [snps, "Chrom"]
 			pos	    = map [snps, "Position"]
@@ -107,11 +168,14 @@ markersSummaryTable <- function (inputDir, gwasType, title="", outDir="out", nBE
 	outName = paste0(outDir, "/out-summary-gwas-best", nBEST)
 	msg ("Writting summary results to ", outName, "...")
 	write.table (file=paste0(outName,".scores"), summaryTable, row.names=F,quote=F, sep="\t")
-	markersVennDiagrams (summaryTable, paste0("Best",nBEST), title, outDir)
+	commonBest = markersVennDiagrams (summaryTable, paste0("Best",nBEST), title, outDir)
+
 	summarySignificatives = summaryTable %>% filter (SIGNF%in%T) 
 	outName = paste0(outDir, "/out-summary-gwas-signficatives.scores")
 	write.table (file=outName, summarySignificatives, row.names=F,quote=F, sep="\t")
-	markersVennDiagrams (summarySignificatives, "Significatives", title, outDir)
+	commonSign = markersVennDiagrams (summarySignificatives, "Significatives", title, outDir)
+
+	markersManhattanPlots (inputDir, gwasType, commonBest, commonSign)
 
 	return (summaryTable)
 }
@@ -140,6 +204,20 @@ msg <- function (...)
   cat (">>>>", messages, "\n")
 }
 
+#-------------------------------------------------------------
+# Add label to filename
+#-------------------------------------------------------------
+addLabel <- function (filename, label, newExt=NULL)  {
+	nameext = strsplit (filename, split="[.]")
+	name    = nameext [[1]][1] 
+	if (is.null (newExt))
+		ext     = nameext [[1]][2] 
+	else
+		ext     = newExt
+	newName = paste0 (nameext [[1]][1], "-", label, ".", ext )
+	return (newName)
+}
+
 # Create Venn diagram of common markers
-#markersSummaryTable ("out/", "Naive", "Tittle", "out/",  nBEST=7)
+#markersSummaryTable ("./", "Naive", "Tittle", "out/",  nBEST=7)
 

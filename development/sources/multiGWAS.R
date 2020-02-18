@@ -11,7 +11,7 @@
 	# r8.0: Full summary, reorganized scores tables, checked scores/thresholds, two correction methods: FDR, BONF. 
 
 # Constants
-DEBUG              = T
+DEBUG              = F
 LOAD_DATA          = FALSE
 SIGNIFICANCE_LEVEL = 0.05      # Minimun level of significance (alpha) to considerer a significant SNP
 MAX_BEST           = 8         # Max number of SNPs of best scored SNPs to show in tables and graphics
@@ -19,7 +19,7 @@ MAX_BEST           = 8         # Max number of SNPs of best scored SNPs to show 
 args = commandArgs(trailingOnly = TRUE)
 #args = c("config-TraitPA-ModelStructure-FiltersFalse-CorrectionBONF.config")
 #args = c("in/config-Gota-Naive-filtersNone-impute.config")
-#args = c("in/config-test500-Naive-filtersNone.config")
+#args = c("config-TraitTuberShape-ModelNaive-FiltersTrue-CorrectionBONF.config")
 
 USAGE="USAGE: Rscript gwas-polypiline.R <config file>"
 if (length (args) != 1) {
@@ -75,8 +75,8 @@ main <- function (args)
 	# Run the four tools in parallel
 	#runPlinkGwas (config)
 	#runGwaspolyGwas (config)
-	runShesisGwas (config)
-	#mclapply (c("Gwasp", "Plink", "Shesis", "Tassel"), runGWASTools, config, mc.cores=4)
+	#runShesisGwas (config)
+	mclapply (c("Gwasp", "Plink", "SHEsis", "Tassel"), runGWASTools, config, mc.cores=4)
 
 	# Create outputs: tables, figures
 	title = gsub(".*\\config-(.*)\\..*", "\\1", c(configFile))
@@ -133,7 +133,7 @@ runGWASTools <- function (tool, config)
 		runGwaspolyGwas (config)
 	else if (tool=="Plink")
 		runPlinkGwas (config)
-	else if (tool=="Shesis")
+	else if (tool=="SHEsis")
 		runShesisGwas (config)
 	else if (tool=="Tassel")
 		runTasselGwas (config)
@@ -168,7 +168,7 @@ runGwaspolyGwas <- function (params)
 
 	# GWAS execution
 	data3 <- runGwaspoly (data2, params$gwasModel, params$snpModels, data3)
-	qtlsFile = sprintf ("out/out-Gwaspoly-%s.scores", params$gwasModel)
+	qtlsFile = sprintf ("out/out-GWASpoly-%s.scores", params$gwasModel)
 	showResults (data3, params$testModels, params$trait, params$gwasModel, params$correctionMethod, 
 				 params$phenotypeFile, params$annotationsFile, ploidy, qtlsFile)
 
@@ -197,7 +197,7 @@ runPlinkGwas <- function (params)
 		runCommand (cmm, "log-Kin.log")
 
 		# Second: Structure by PCs 
-		cmm=sprintf ("%s/sources/scripts/script-plink-FullModel %s %s %s", HOME, inGeno, inPheno, outFile)
+		cmm=sprintf ("%s/sources/scripts/script-plink-FullModel.sh %s %s %s", HOME, inGeno, inPheno, outFile)
 	}
 	else
 		quit (paste ("Type of GWAS:\"", model, "\", not supported"))
@@ -218,32 +218,33 @@ runPlinkGwas <- function (params)
 		nMiss     <- resultsLinear [results$SNP, "NMISS"]
 		threshold = -log10 (SIGNIFICANCE_LEVEL/nMiss)
 		scores    = -log10 (nMiss*pValues)
+		positions =  resultsLinear [results$SNP, "BP"]
 	}else
 		stop ("Unknown correction method: ", params$correctionMethod)
 
-	resultsAll    <- cbind (results, P=pValues, SCORE=round (scores,6), THRESHOLD=round (threshold,6), DIFF=round (scores-threshold, 6))
+	resultsAll    <- cbind (results, POS=positions, P=pValues, SCORE=round (scores,6), THRESHOLD=round (threshold,6), DIFF=round (scores-threshold, 6))
 	resultsAll    <- resultsAll [order (resultsAll$DIFF, decreasing=T),]
 	outScores = paste0 (outFile, ".scores")
 	write.table (file=outScores, resultsAll, row.names=F, quote=F, sep="\t")
 }
 	
 #-------------------------------------------------------------
-# Shesis tool
+# SHEsis tool
 #-------------------------------------------------------------
 runShesisGwas <- function (params) 
 {
-	msg ("Running Shesis GWAS...")
+	msg ("Running SHEsis GWAS...")
 	model = params$gwasModel
 
 	inGenoPheno  = "out/filtered-shesis-genopheno.tbl"
 	inMarkers    = "out/filtered-shesis-markernames.tbl"
 	inMarkersPos = "out/filtered-shesis-markernamespos.tbl"
-	outFile      = paste0 ("out/out-Shesis-", model)
+	outFile      = paste0 ("out/out-SHEsis-", model)
 	outShesis    = paste0(outFile,".txt")
 	scoresFile   = paste0(outFile,".scores")
 
 	cmm=sprintf ("%s/sources/scripts/script-shesis-NaiveModel.sh %s %s %s", HOME, inGenoPheno, inMarkers, outFile)
-	runCommand (cmm, "log-Shesis.log")
+	runCommand (cmm, "log-SHEsis")
 
 	# Format data to table with scores and threshold
 	results = read.table (file=scoresFile, header=T, sep="\t")
@@ -256,15 +257,13 @@ runShesisGwas <- function (params)
 		threshold = -log10 (SIGNIFICANCE_LEVEL/nMiss)
 		scores    = -log10 (nMiss*pValues)
 	}
-	inMarkersPosData = read.table (file=inMarkersPos, header=T, sep="\t")
-	SNP = results$SNP
-	msg ("BEF")
-	CHR = inMarkersPosData [SNP, 2]
-	POS = inMarkersPosData [SNP, 3]
+	inMarkersPosData <- read.table (file=inMarkersPos, header=F, sep="\t")
+	rownames (inMarkersPosData) = inMarkersPosData [,1]
+	SNP <- as.character (results$SNP)
+	CHR <- inMarkersPosData [SNP, 2]
+	POS <- inMarkersPosData [SNP, 3]
 
 	resultsAll <- data.frame (SNP, CHR, POS, P=pValues, SCORE=round (scores,6), THRESHOLD=round (threshold,6), DIFF=round (scores-threshold, 6), results)
-	hd (resultsAll)
-	msg ("AFT")
 	resultsAll <- resultsAll [order (resultsAll$DIFF, decreasing=T),]
 	write.table (file=scoresFile, resultsAll, row.names=F, quote=F, sep="\t")
 }
@@ -482,23 +481,23 @@ filterByMissingHWE <- function (genotypeFile, phenotypeFile, config)
 	return (list (genotypeFile=outGenoFile, phenotypeFile=outPhenoFile, trait=trait))
 }
 
-#-------------------------------------------------------------
-# Calculate the inflation factor from -log10 values
-#-------------------------------------------------------------
-calculateInflationFactor <- function (scores)
-{
-	remove <- which(is.na(scores))
-	if (length(remove)>0) 
-		x <- sort(scores[-remove],decreasing=TRUE)
-	else 
-		x <- sort(scores,decreasing=TRUE)
-
-	pvalues = 10^-x
-	chisq <- na.omit (qchisq(1-pvalues,1))
-	delta  = round (median(chisq)/qchisq(0.5,1), 3)
-
-	return (list(delta=delta, scores=x))
-}
+##-------------------------------------------------------------
+## Calculate the inflation factor from -log10 values
+##-------------------------------------------------------------
+#calculateInflationFactor <- function (scores)
+#{
+#	remove <- which(is.na(scores))
+#	if (length(remove)>0) 
+#		x <- sort(scores[-remove],decreasing=TRUE)
+#	else 
+#		x <- sort(scores,decreasing=TRUE)
+#
+#	pvalues = 10^-x
+#	chisq <- na.omit (qchisq(1-pvalues,1))
+#	delta  = round (median(chisq)/qchisq(0.5,1), 3)
+#
+#	return (list(delta=delta, scores=x))
+#}
 
 #-------------------------------------------------------------
 # Get params from config file and define models according to ploidy
@@ -616,7 +615,7 @@ calculateThreshold <- function (level, scores, method="FDR")
     }
 #-------------------------------------------------------------
 # Impute, filter by MAF, unify geno and pheno names
-# Only for "ACGT" format (For other formats see Gwaspoly sources)
+# Only for "ACGT" format (For other formats see GWASpoly sources)
 #-------------------------------------------------------------
 filterByMAFCommonNames <- function(geno.file, pheno.file, thresholdMAF=0.0){
 	format    = "ACGT"	
@@ -711,9 +710,22 @@ filterByMAFCommonNames <- function(geno.file, pheno.file, thresholdMAF=0.0){
 }
 
 #-------------------------------------------------------------
+# Add label to filename and new extension (optional)
+#-------------------------------------------------------------
+addLabel <- function (filename, label, newExt=NULL)  {
+	nameext = strsplit (filename, split="[.]")
+	name    = nameext [[1]][1] 
+	if (is.null (newExt))
+		ext     = nameext [[1]][2] 
+	else
+		ext     = newExt
+	newName = paste0 (nameext [[1]][1], "-", label, ".", ext )
+	return (newName)
+}
+#-------------------------------------------------------------
 # Add label to filename
 #-------------------------------------------------------------
-addLabel <- function (filename, label)  {
+old_addLabel <- function (filename, label)  {
 	nameext = strsplit (filename, split="[.]")
 	newName = paste0 (nameext [[1]][1], "-", label, ".", nameext [[1]][2])
 	return (newName)

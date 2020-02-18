@@ -114,8 +114,8 @@ showResults <- function (data3, testModels, trait, gwasModel, correctionMethod, 
 	par(op)
 	dev.off()
 
-	msg (">>>> Writing QTLs...")
-	#write.GWASpoly (data5, trait, qtlsFile, "scores", delim="\t")
+	msg (">>>> Writing QTLs to file: ", qtlsFile, "...")
+	#write.GWASpoly (data5, trait, paste0(qtlsFile,".qtls"), "scores", delim="\t")
 
 	significativeQTLs  = getQTL (data5, snpsAnnFile, gwasModel, ploidy)
 	#significativesFile = addLabel (qtlsFile, "SIGNIFICATIVES")
@@ -146,6 +146,7 @@ getQTL <- function(data,snpsAnnFile, gwasModel, ploidy, traits=NULL,models=NULL)
 	n.trait <- length(traits)
 	output <- data.frame(NULL)
 	for (j in 1:n.model) {
+		msg (">>>>>>>>>>>>>> ", "Model: ", models [j], "<<<<<<<<<<<<<<<<<<<<")
 		#ix <- which(data@scores[[traits[1]]][,models[j]] > (data@threshold[traits[1],models[j]]) - 1)
 		ix <- which (data@scores[[traits[1]]][,models[j]] != 0)
 		markers <-  data.frame (SNP=data@map[ix,c("Marker")])
@@ -176,15 +177,36 @@ getQTL <- function(data,snpsAnnFile, gwasModel, ploidy, traits=NULL,models=NULL)
 						#stringsAsFactors=F,check.names=F)
 
 		output <- rbind(output, df)
+		hd (df)
 	}
 	#out <-cbind (Type=gwasModel, output)
 	output <- output [order(-output$GC, -output$DIFF),]
-	output = output [!duplicated (output$Marker),]
+	#output = output [!duplicated (output$Marker),]
 	outputPositives = output [output$DIFF > 0,]
 	outputNegatives = output [output$DIFF <= 0,]
 
 	outputTotal = rbind (outputPositives, outputNegatives)
+	#return(outputTotal)
+	write.table (file="out-output.scores", output, sep="\t", quote=F, row.names=F)
 	return(outputTotal)
+}
+
+#-------------------------------------------------------------
+# Calculate the inflation factor from -log10 values
+#-------------------------------------------------------------
+calculateInflationFactor <- function (scores)
+{
+	remove <- which(is.na(scores))
+	if (length(remove)>0) 
+		x <- sort(scores[-remove],decreasing=TRUE)
+	else 
+		x <- sort(scores,decreasing=TRUE)
+
+	pvalues = 10^-x
+	chisq <- na.omit (qchisq(1-pvalues,1))
+	delta  = round (median(chisq)/qchisq(0.5,1), 3)
+
+	return (list(delta=delta, scores=x))
 }
 
 #-------------------------------------------------------------

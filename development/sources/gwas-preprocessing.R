@@ -68,14 +68,12 @@ gwaspToPlinkGenoMap <- function (gwaspGenoFile, outDir="./")
 {
 	msg ("    >>>> CCCreating plink MAP file from ", gwaspGenoFile)
 	genotype    <- read.table (file=gwaspGenoFile, header=T,stringsAsFactors=T,sep=",", check.names=F)
-	hd (genotype)
 	map <- genotype [,-(1:3)]
 	markers     <- as.character(genotype [,1])
 	chromosomes <- genotype [,2]
 	positions   <- genotype [,3]
 
 	plinkMap     <- data.frame (chr=chromosomes, iid=markers, dist=0, positions=positions, check.names=F)
-	hd (plinkMap)
 
 	#plinkMapSorted <- plinkMap %>% arrange (chr, positions)
 	outFile   = paste0 (outDir, strsplit (basename (gwaspGenoFile), split="[.]")[[1]][1], "-plink.map")
