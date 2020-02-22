@@ -1,0 +1,76 @@
+---
+params:
+  workingDir    : "in/"
+title: "MultiGWAS Report "
+output: 
+  html_document:
+    theme: cerulean
+    toc: true
+    number_sections: false
+---
+
+```{r include=FALSE,echo=FALSE}
+library(knitr)
+library(kableExtra)
+```
+
+```{r  echo=FALSE, message=FALSE}
+inputDir     = paste0 (params$workingDir, "/report/")
+```
+
+```{r includeKnit, include=FALSE,echo=FALSE}
+library(knitr)
+library(kableExtra)
+```
+
+```{r setKnitOptions, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, echo=FALSE, warning=FALSE, message=FALSE)
+cachedata = FALSE
+cachemodels = FALSE
+```
+
+# INPUT PARAMETERS
+```{r printTableInputParameters }
+paramsDF = read.table (file=paste0(inputDir,"out-multiGWAS-inputParameters.tbl"), header=T, sep="\t")
+kable (paramsDF) %>%
+ 	kable_styling(bootstrap_options = c("striped", "hover", "condensed", font_size=5))
+```
+
+# N BEST RANKED SNPs
+Venn diagram and table showing the N best ranked SNPs found by each tool and by more than one tool.
+
+## Venn diagram N best ranked SNPs
+```{r vennDiagramBest, fig.align = "center", echo=FALSE, message=FALSE, fig.width=5, fig.height=5, fig.fullwidth=TRUE}
+knitr::include_graphics (paste0(inputDir,"/out-multiGWAS-vennDiagram-best.png"))
+```
+
+## Table N best ranked SNPs
+```{r printTableBest,  echo=FALSE, message=FALSE}
+bestTable = read.table (file=paste0(inputDir, "/out-multiGWAS-scoresTable-best.scores"), header=T, sep="\t")
+kable (bestTable) %>%
+ 	kable_styling(bootstrap_options = c("striped", "hover", "condensed", font_size=5))
+```
+
+# SIGNIFICATIVE SNPs
+Venn diagram and table showing the signficative SNPs found by each tool and by more than one tool.
+
+## Venn diagran signficative SNPs
+```{r, fig.align = "center", echo=FALSE, message=FALSE, fig.width=5, fig.height=5, fig.fullwidth=TRUE}
+knitr::include_graphics (paste0 (inputDir,"/out-multiGWAS-vennDiagram-significatives.png"))
+```
+
+## Table significative SNPs
+```{r  echo=FALSE, message=FALSE}
+significativesTable = read.table (file=paste0(inputDir, "/out-multiGWAS-scoresTable-significatives.scores"), header=T, sep="\t")
+kable (significativesTable) %>%
+ 	kable_styling(bootstrap_options = c("striped", "hover", "condensed", font_size=5))
+```
+
+# MANHATTAN AND QQ PLOTS
+Manhattan and QQ plots for the GWAS analysis of the four tools. 
+
+ - The SNPs above the red line were found as significatives for each tool
+ - The SNPs above the blue line correspond to the N best ranked SNPs for each tool
+ - SNPs marked in green were found by more than one tool.
+```{r  fig.widht=11, fig.height=30, fig.fullwidth=TRUE}
+knitr::include_graphics (paste0 (inputDir, "/out-multiGWAS-manhattanQQ-plots.png"))

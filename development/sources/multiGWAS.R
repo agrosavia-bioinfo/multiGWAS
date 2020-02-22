@@ -4,6 +4,7 @@
 # AUTHOR: Luis Garreta (lgarreta@agrosavia.co) 
 # DATA  : 12/feb/2020
 # LOGS  :   
+	# r0.91: Working with rmarkdown (without QR profile)
 	# r0.9: Full functional, but it needs to be improved: own filtes (HWE), SHEsis Full model, corrections and thresholds (FDR, BONF), Manhattan plots
 	# r12.0: Fixed preprocessing using read.GWASpoly. Fixed getQTLs for gwaspoly gwas. Full functionality
 	# r11.0: Improved naive with unity kinship matrix. Results according to plink and tassel. It needs to show in summary
@@ -45,28 +46,25 @@ source (paste0 (HOME, "/sources/scripts/script-gwaspoly.R"))       # Module with
 #-------------------------------------------------------------
 # Global configs
 #-------------------------------------------------------------
-#genotypeFormats = "numeric"|"AB"|"ACGT"
-#gwasModel = "Naive"|"Kinship+PCs"
-#-------------------------------------------------------------
 data = data1 = data2 = data3 = NULL
-dt=NULL
 #-------------------------------------------------------------
 # Main
 #-------------------------------------------------------------
 main <- function (args) 
 {
 	# Read and check config file arguments
-	configFile =  args [1]
-	config <- getConfigurationParameters (configFile)
-	genotypeFile  <- config$genotypeFile
-	phenotypeFile <- config$phenotypeFile
+	configFile       <-  args [1]
+	config           <- getConfigurationParameters (configFile)
+	config$outputDir <- "out/"
+	config$reportDir <- "report/"
 
-	outDir = initOutputDir (configFile, genotypeFile, phenotypeFile)
+	# Create output dir "out/" and move to it
+	workingDir = initOutputDir (configFile, config$genotypeFile, config$phenotypeFile)
 
 	msg (">>>>>>>>>>>>", config$gwasModel, "<<<<<<<<<<<") 
 
 	# Read, filter, and check phenotype and genotype
-	data <- dataPreprocessing (genotypeFile, phenotypeFile, config)
+	data <- dataPreprocessing (config$genotypeFile, config$phenotypeFile, config)
 	config$genotypeFile  =data$genotypeFile
 	config$phenotypeFile =data$phenotypeFile
 
@@ -78,20 +76,23 @@ main <- function (args)
 	#runShesisGwas (config)
 	mclapply (c("Gwasp", "Plink", "SHEsis", "Tassel"), runGWASTools, config, mc.cores=4)
 
+	# Create reports
+	createReports (config$outputDir , config$gwasModel, config$reportDir, nBest=7)
+
 	# Create outputs: tables, figures
-	title = gsub(".*\\config-(.*)\\..*", "\\1", c(configFile))
-	markersSummaryTable ("out/", config$gwasModel, title,  "out/", nBEST=MAX_BEST, significanceLevel=config$signficanceLevel)
+	##title = gsub(".*\\config-(.*)\\..*", "\\1", c(configFile))
+	##markersSummaryTable ("out/", config$gwasModel, title,  "out/", nBEST=MAX_BEST, significanceLevel=config$signficanceLevel)
 
 	# Move out files to output dir
-	moveOutFiles (outDir)
+	moveOutFiles (config$outputDir, config$reportDir)
 
-
-	# Save test in new dir
-	#outName = gsub ("config","test", configFile)
-	#system (sprintf ("mv out %s", outName))
+	# Call to rmarkdown report
+	msg ("Creating markdown report...")
+	outputFile = paste0 (workingDir, "/multiGWAS-report.html")
+	rmarkdown::render (paste0(HOME,"/sources/gwas-markdown.Rmd"), output_file=outputFile,  params=list (workingDir=workingDir))
 }
 #-------------------------------------------------------------
-# Create dir if it exists it is renamed as old-XXXX
+# Create dir, if it exists, it is renamed as old-XXXX
 # Copy and make links of geno/pheno to output dirs
 #-------------------------------------------------------------
 initOutputDir <- function (configFile, genotypeFile, phenotypeFile) 
@@ -106,23 +107,30 @@ initOutputDir <- function (configFile, genotypeFile, phenotypeFile)
 
 	setwd (outDir)
 	system ("mkdir out")
+	system (sprintf ("cp %s %s", configFile, "out"))
 
+	# Copy geno/pheno to "out/" dir 
 	runCommand (sprintf ("cp -a %s %s", genotypeFile, "out/"))
 	runCommand (sprintf ("cp -a %s %s", phenotypeFile, "out/"))
 
-	# Copy config file
+	workingDir = getwd ()
+	return (workingDir)
+
 }
 
-moveOutFiles <- function (outDir) 
+#-------------------------------------------------------------
+# Move output files to specific directories
+#-------------------------------------------------------------
+moveOutFiles <- function (outputDir, reportDir) 
 {
-	system ("mv out/out*scores .")
-	system ("mv out/out*pdf .")
+	msg ("Moving output files to output directories...")
+	system (sprintf ("mv %s/out*scores %s", outputDir, reportDir))
+	system (sprintf ("mv %s/out*pdf %s", outputDir, reportDir))
 	system ("mkdir logs")
 	system ("mv *.log* logs")
 	system ("mv *.errors* logs")
+	system ("mv *PCs* logs")
 }
-
-
 
 #-------------------------------------------------------------
 # Used to run in parallel the other functions
@@ -149,8 +157,6 @@ runGwaspolyGwas <- function (params)
 	genotypeFile  = params$genotypeFile
 	phenotypeFile = params$phenotypeFile
 
-	if (LOAD_DATA & file.exists ("gwas.RData")) load (file="gwas.RData")
-
 	# Only for tetra ployds
 	ploidy = 4
 
@@ -168,11 +174,8 @@ runGwaspolyGwas <- function (params)
 
 	# GWAS execution
 	data3 <- runGwaspoly (data2, params$gwasModel, params$snpModels, data3)
-	qtlsFile = sprintf ("out/out-GWASpoly-%s.scores", params$gwasModel)
-	showResults (data3, params$testModels, params$trait, params$gwasModel, params$correctionMethod, 
-				 params$phenotypeFile, params$annotationsFile, ploidy, qtlsFile)
-
-	if (LOAD_DATA) save(data, data1, data2, data3, file="gwas.RData") 
+	showResults (data3, params$testModels, params$trait, params$gwasModel, 
+				 params$correctionMethod, params$phenotypeFile, ploidy)
 }
 
 #-------------------------------------------------------------
@@ -244,7 +247,7 @@ runShesisGwas <- function (params)
 	scoresFile   = paste0(outFile,".scores")
 
 	cmm=sprintf ("%s/sources/scripts/script-shesis-NaiveModel.sh %s %s %s", HOME, inGenoPheno, inMarkers, outFile)
-	runCommand (cmm, "log-SHEsis")
+	runCommand (cmm, "log-SHEsis.log")
 
 	# Format data to table with scores and threshold
 	results = read.table (file=scoresFile, header=T, sep="\t")

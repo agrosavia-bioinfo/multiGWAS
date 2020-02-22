@@ -4,7 +4,6 @@
 # AUTHOR : Luis Garreta (lgarreta@agrosavia.co)
 # DATA   : feb/2020
 # LOG: 
-#	r4.0: Modified to work with markdown, but better to only report outputs (PNGs) to be included by markdown
 #	r3.0: Manhattan and QQ plots. Formated to create a Markdown report (not yet)
 #	r2.0: Improve selection of data from tables. Titles to graphics and files
 #	r1.0: Message to log files
@@ -13,22 +12,22 @@
 #     
 
 ## @knitr loadLibraries
-suppressMessages (library (stringr))
-suppressMessages (library (dplyr))
-suppressMessages (library (qqman))
-suppressMessages (library (VennDiagram))
-suppressMessages (library (config))  # For read config file
+library (stringr)
+library (dplyr)
+library (qqman)
+library (VennDiagram)
+library (config)  # For read config file
 KNITFLAG=TRUE
 
 options (width=300)
 #options(scipen=999)
 
 ## @knitr initParams
-#inputDir    = "in/"
-#outputDir   = "out/"
-#gwasModel    = "Structure"
-#reportTitle = "GWAS Report"
-#nBest = 6
+inputDir    = "in/"
+outputDir   = "out/"
+gwasType    = "Structure"
+reportTitle = "GWAS Report"
+nBEST = 6
 
 ## kinitr main
 #-------------------------------------------------------------
@@ -37,18 +36,12 @@ options (width=300)
 # Outupt are written to output dir
 #-------------------------------------------------------------
 main <- function () {
-
 	msg ("Main...")
 
 	KNITFLAG <<- FALSE
 
-	inputDir    = "out/"
-	outputDir   = "report/"
-	gwasModel    = "Structure"
-	reportTitle = "GWAS Report"
-	nBest = 6
-
-	createReports (inputDir, gwasModel, outputDir, outputDir)
+	createDir (outputDir)
+	createReports (inputDir, gwasType, reportTitle, outputDir)
 }
 
 #-------------------------------------------------------------
@@ -59,41 +52,62 @@ main <- function () {
 #   4- 1 Venn diagram of significative SNPs
 #	5- 1 multiplot of 4x4 manhattan and QQ plots
 #-------------------------------------------------------------
-createReports <- function (inputDir, gwasModel, outputDir, nBest=7) 
+createReports <- function (inputDir, gwasType, title, outputDir, nBEST=7) 
 {
-	msg ("Creating reports for ", gwasModel, "...")
-	createDir (outputDir)
+	msg ("Creating reports...")
+	# Get the two summary snpsTables: best SNPs, and significative SNPs
+	snpsTables = markersSummaryTable (inputDir, gwasType, reportTitle, outputDir,  nBEST)
 
-	msg ("Writing table input config parameters...")
-	writeConfigurationParameters (inputDir, outputDir)
+	# Title: Report from MultiGWAS tool
+	## The report contains the following elements:
+	## 1. Table of N best ranged SNPs
+	## 2. Table of significative SNPs
+	## 3. Venn diagrams of N best ranged SNPs
+	## 4. Venn diagrams of sinificative SNPs
+	## 5. Manhattan and QQ plots
 
-	msg ("Writting table with summary results...")
-	snpsTables = markersSummaryTable (inputDir, gwasModel, outputDir,  nBest)
+	# 0. Table with input parameters from config file
+	msg ("Writing input config parameters to table...")
+	paramsDF = getConfigurationParameters (inputDir)
+	outName = paste0(outputDir, "/out-input-parameters.tbl")
+	print (outName)
+	write.table (file=outName, paramsDF, quote=F, sep="\t", row.names=F)
 
-	msg ("Writing table with ", nBest, " best ranked SNPs Table...")
-	outName = paste0(outputDir, "/out-multiGWAS-scoresTable-best.scores")
-	write.table (file=outName, snpsTables$best, row.names=F,quote=F, sep="\t")
+	# 1. Table of N best ranged SNPs
+	## Table with the first N best ranged SNPs from the GWAS analysis
+	msg ("Writing Best SNPS Table...")
+	outName = paste0(outputDir, "/out-summary-gwas-best")
+	write.table (file=paste0(outName,".scores"), snpsTables$best, row.names=F,quote=F, sep="\t")
 
-	msg ("Writing table with significative SNPs...")
-	outName = paste0(outputDir, "/out-multiGWAS-scoresTable-significatives.scores")
+	# 2. Table of significative SNPs
+	## Table with the significative SNPs from the GWAS analysis
+	msg ("Writing Significative SNPS Table...")
+	outName = paste0(outputDir, "/out-summary-gwas-significatives.scores")
 	write.table (file=outName, snpsTables$significatives, row.names=F,quote=F, sep="\t")
 
-	msg ("Writing Venn diagram with best SNPs...")
-	outFilename = paste0(outputDir,"/out-multiGWAS-vennDiagram-best.png")
+	# 3. Venn diagrams of N best ranged SNPs
+	## Venn diagram showing the N best ranged SNPs 
+	msg ("Creating Venn diagram for best...")
+	outFilename = paste0(outputDir,"/out-summary-gwas-venndiagram-best.png")
 	png (outFilename, res=72)
-	commonBest = markersVennDiagrams (snpsTables$best, gwasModel, "Best")
+	commonBest = markersVennDiagrams (snpsTables$best, "Best",  title, outputDir)
 	dev.off()
 
-	msg ("Writing Venn diagram with significative SNPs...")
-	outFilename = paste0(outputDir,"/out-multiGWAS-vennDiagram-significatives.png")
+	# 4. Venn diagrams of sinificative SNPs
+	## Venn diagram showing the significative SNPs from the GWAS analysis
+	msg ("Creating Venn diagram for significatives...")
+	outFilename = paste0(outputDir,"/out-summary-gwas-venndiagram-significatives.png")
 	png (outFilename, res=72)
-	commonSign = markersVennDiagrams (snpsTables$significatives, gwasModel, "Significatives")
+	commonSign = markersVennDiagrams (snpsTables$significatives, "Significatives", title, outputDir)
 	dev.off ()
 
-	msg ("Writing Manhattan and QQ plots...")
-	png (paste0 (outputDir, "/out-multiGWAS-manhattanQQ-plots.png"), width=11, height=15, units="in", res=320)
-	markersManhattanPlots (inputDir, gwasModel, commonBest, commonSign, snpsTables$significatives, outputDir)
+	# 5. Manhattan and QQ plots
+	## Manhattan and QQ plots for the GWAS analysis of the four tools
+
+	png (paste0 (outputDir, "/out-summary.manhattan-qq-plots.png"), width=11, height=15, units="in", res=320)
+	markersManhattanPlots (inputDir, gwasType, commonBest, commonSign, snpsTables$significatives, outputDir)
 	dev.off()
+
 }
 
 #-------------------------------------------------------------
@@ -118,8 +132,8 @@ calculateInflationFactor <- function (scores)
 #------------------------------------------------------------------------
 #------------------------------------------------------------------------
 ## @knitr markersManhattanPlots
-markersManhattanPlots <- function (inputDir, gwasModel, commonBest, commonSign, summarySignificatives, outputDir, nBest=8) {
-	files =  list.files(inputDir, pattern=paste0("^(.*(",gwasModel,").*(scores)[^$]*)$"), full.names=T)
+markersManhattanPlots <- function (inputDir, gwasType, commonBest, commonSign, summarySignificatives, outputDir, nBest=8) {
+	files =  list.files(inputDir, pattern=paste0("^(.*(",gwasType,").*(scores)[^$]*)$"), full.names=T)
 	#pdf (paste0 (outputDir, "/out-summary.manhattan-qq-plots.pdf"), width=11, height=7)
 	op <- par(mfrow = c(4,2), mar=c(3.5,3.5,3,1), oma=c(0,0,0,0), mgp = c(2.2,1,0))
 	for (filename in files) {
@@ -174,7 +188,7 @@ markersManhattanPlots <- function (inputDir, gwasModel, commonBest, commonSign, 
 # Create Venn diagram of common markers using info from summary table
 #------------------------------------------------------------------------
 ## @knitr markersVennDiagrams
-markersVennDiagrams <- function (summaryTable, gwasModel, scoresType){
+markersVennDiagrams <- function (summaryTable, scoresType, title="", outputDir="out"){
 	flog.threshold(ERROR)
 	x <- list()
 	x$GWASpoly = summaryTable %>% filter (TOOL %in% "GWASpoly") %>% select (SNP) %>% .$SNP
@@ -191,7 +205,7 @@ markersVennDiagrams <- function (summaryTable, gwasModel, scoresType){
 	#commonSNPs = intersect (intersect (x$GWASpoly, x$SHEsis), intersect(x$Plink, x$Tassel))
 	commonSNPs = union (union (a,b),union (union (c,d),union (e,f)))
 
-	mainTitle = paste0(gwasModel, "-", scoresType)
+	mainTitle = paste0(title, "-", scoresType)
 	msg();msg (mainTitle);msg()
 	v0 <- venn.diagram(x, height=12000, width=12000, alpha = 0.5, filename = NULL, # main=mainTitle,
 						col = c("red", "blue", "green", "yellow"), cex=0.9, margin=0.0,
@@ -217,12 +231,11 @@ markersVennDiagrams <- function (summaryTable, gwasModel, scoresType){
 # Create a summary table of best and significative markers
 #------------------------------------------------------------------------
 ## @knitr markersSummaryTable
-markersSummaryTable <- function (inputDir, gwasModel, outputDir="out", nBest=5) {
-
+markersSummaryTable <- function (inputDir, gwasType, title="", outputDir="out", nBEST=5, significanceLevel=0.05, correctionMethod="FDR") {
 	map = read.table (file=paste0(inputDir,"/map.tbl"))
 	rownames (map) = map [,1]
 
-	files =  list.files(inputDir, pattern=paste0("^(.*(",gwasModel,").*(scores)[^$]*)$"), full.names=T)
+	files =  list.files(inputDir, pattern=paste0("^(.*(",gwasType,").*(scores)[^$]*)$"), full.names=T)
 	#msg ("Files: ", inputDir); print (files)
 	msg ("CREATING THE SUMMARY...")
 	summaryTable = data.frame ()
@@ -231,7 +244,7 @@ markersSummaryTable <- function (inputDir, gwasModel, outputDir="out", nBest=5) 
 	for (f in files) {
 		msg ("Processing file: ", f)
 		data <- read.table (file=f, header=T)
-		if (nrow(data)>nBest) data=data [1:nBest,] 
+		if (nrow(data)>nBEST) data=data [1:nBEST,] 
 		pVal	<- data$P
 		pscores <- data$SCORE
 		tscores <- data$THRESHOLD
@@ -264,7 +277,7 @@ markersSummaryTable <- function (inputDir, gwasModel, outputDir="out", nBest=5) 
 			flagNewData = T
 		}
 		if (flagNewData==T) {
-			dfm = data.frame (TOOL=tool, MODEL=gwasModel, CHR=chrom, POS=pos, SNP=snps, P = round (pVal,6), SCORE=pscores, THRESHOLD=tscores, SIGNF=signf )
+			dfm = data.frame (TOOL=tool, MODEL=gwasType, CHR=chrom, POS=pos, SNP=snps, P = round (pVal,6), SCORE=pscores, THRESHOLD=tscores, SIGNF=signf )
 			dfm = dfm %>% distinct (SNP, .keep_all=T)
 			summaryTable <- rbind (summaryTable, dfm)
 			flagNewData = F
@@ -272,7 +285,17 @@ markersSummaryTable <- function (inputDir, gwasModel, outputDir="out", nBest=5) 
 	}
 
 	summaryTable = summaryTable [which(!is.na(summaryTable$SIGNF)),]
+	#outName = paste0(outputDir, "/out-summary-gwas-best", nBEST)
+	#msg ("Writting summary results to ", outName, "...")
+	#write.table (file=paste0(outName,".scores"), summaryTable, row.names=F,quote=F, sep="\t")
+	#commonBest = markersVennDiagrams (summaryTable, paste0("Best",nBEST), title, outputDir)
+
 	summarySignificatives = summaryTable %>% filter (SIGNF%in%T) 
+	#outName = paste0(outputDir, "/out-summary-gwas-signficatives.scores")
+	#write.table (file=outName, summarySignificatives, row.names=F,quote=F, sep="\t")
+	#commonSign = markersVennDiagrams (summarySignificatives, "Significatives", title, outputDir)
+
+	#markersManhattanPlots (inputDir, gwasType, commonBest, commonSign, summarySignificatives)
 
 	return (list (best=summaryTable, significatives=summarySignificatives))
 }
@@ -342,10 +365,11 @@ createDir <- function (newDir) {
 #-------------------------------------------------------------
 # Get params from config file and define models according to ploidy
 #-------------------------------------------------------------
-## @knitr writeConfigurationParameters
-writeConfigurationParameters <- function (inputDir, outputDir) 
+## @knitr getConfigurationParameters
+getConfigurationParameters <- function (inputDir) 
 {
-	msg("Reading config file...", inputDir)
+	msg("Reading config file...")
+	print (list.files (inputDir))
 	configFile = paste0(inputDir, list.files (inputDir, pattern="config")[1])
 	msg (configFile)
 
@@ -364,9 +388,6 @@ writeConfigurationParameters <- function (inputDir, outputDir)
 	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="MAF Filter (Minor allele frequency)", VALUE=toString (params$MAF)))
 	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="HWE Filter (Hardy-Weinberg test)", VALUE=toString (params$HWE)))
 
-	msg("Writing config file...", inputDir)
-	outName = paste0(outputDir, "/out-multiGWAS-inputParameters.tbl")
-	write.table (file=outName, paramsDF, quote=F, sep="\t", row.names=F)
 	return (paramsDF)
 }
 #-------------------------------------------------------------
@@ -375,5 +396,5 @@ writeConfigurationParameters <- function (inputDir, outputDir)
 #-------------------------------------------------------------
 # Call to main function (first lines)
 #-------------------------------------------------------------
-#main ()
+main ()
 

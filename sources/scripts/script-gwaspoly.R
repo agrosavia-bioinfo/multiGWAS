@@ -1,7 +1,14 @@
+# INFO   : Script to run GWASpoly for tetraploides (modified from GWASpoly sources)
+# AUTHOR : Luis Garreta (lgarreta@agrosavia.co)
+# DATA   : Feb/2020
+# LOG    :
+	# r1.01:  Removed annotations from functions. Output results to "out/" dir 
 #-------------------------------------------------------------
 #-------------------------------------------------------------
 runGwaspGwas <- function (params) 
 {
+	msg("Running GWASpoly...")
+
 	genotypeFile  = params$genotypeFile
 	phenotypeFile = params$phenotypeFile
 
@@ -25,7 +32,7 @@ runGwaspGwas <- function (params)
 	# GWAS execution
 	data3 <- runGwaspoly (data2, params$gwasModel, params$snpModels, data3)
 	showResults (data3, params$testModels, params$trait, params$gwasModel, 
-				 params$phenotypeFile, params$annotationsFile, ploidy)
+				 params$phenotypeFile, ploidy)
 
 	if (LOAD_DATA) save(data, data1, data2, data3, file="gwas.RData") 
  }
@@ -81,13 +88,14 @@ runGwaspoly <- function (data2, gwasModel, snpModels, data3)
 #-------------------------------------------------------------
 # Plot results
 #-------------------------------------------------------------
-showResults <- function (data3, testModels, trait, gwasModel, correctionMethod, phenotypeFile, snpsAnnFile, ploidy, qtlsFile) 
+showResults <- function (data3, testModels, trait, gwasModel, correctionMethod, phenotypeFile, ploidy) 
 {
-	msg();msg ("Writing results...", trait)
+	msg();msg ("Writing GWASpoly results...")
+	outputDir    = "out/"
+	outGWASpoly  = "out-GWASpoly"
 
-	msg (">>>> Plotting results...")
+	msg (">>>> Plotting results to ", outputDir, "...")
 	phenoName = strsplit (phenotypeFile, split=".scores")[[1]][1]
-	plotName = sprintf("out/out-Gwasp%s-%s-plots.pdf", ploidy, gwasModel)
 
 	n = length (testModels)
 	
@@ -95,9 +103,10 @@ showResults <- function (data3, testModels, trait, gwasModel, correctionMethod, 
 	data5 = set.threshold (data3, method=correctionMethod,level=0.05,n.core=4)
 
 	# Plots
+	plotName = sprintf("%s/%s-%s-plots.pdf", outputDir, outGWASpoly, gwasModel)
 	pdf (file=plotName, width=11, height=7)
 	# QQ plot 
-	op <- par(mfrow = c(2,n), oma=c(0,0,3,0))
+	op <- par(mfrow = c(2,n), oma=c(0,0,3,0), mgp= c(2.2,1,0))
 	for (i in 1:length(testModels)) {
 		#par (cex.main=0.5, cex.lab=0.5, cex.axis=0.5, ann=T)
 		qqPlot(data3,trait=trait, model=testModels[i], cex=0.3)
@@ -114,12 +123,12 @@ showResults <- function (data3, testModels, trait, gwasModel, correctionMethod, 
 	par(op)
 	dev.off()
 
+	qtlsFile = sprintf("%s/%s-%s-QTLs.scores", outputDir, outGWASpoly, gwasModel)
 	msg (">>>> Writing QTLs to file: ", qtlsFile, "...")
 	#write.GWASpoly (data5, trait, paste0(qtlsFile,".qtls"), "scores", delim="\t")
 
-	significativeQTLs  = getQTL (data5, snpsAnnFile, gwasModel, ploidy)
-	#significativesFile = addLabel (qtlsFile, "SIGNIFICATIVES")
-	write.table (file=qtlsFile, significativeQTLs, quote=F, sep="\t", row.names=F)
+	outQTLsAllSNPs  = getQTL (data5, gwasModel, ploidy)
+	write.table (file=qtlsFile, outQTLsAllSNPs, quote=F, sep="\t", row.names=F)
 
 }
 
@@ -127,7 +136,7 @@ showResults <- function (data3, testModels, trait, gwasModel, correctionMethod, 
 #-------------------------------------------------------------
 # Extracts significant QTL
 #-------------------------------------------------------------
-getQTL <- function(data,snpsAnnFile, gwasModel, ploidy, traits=NULL,models=NULL) 
+getQTL <- function(data,gwasModel, ploidy, traits=NULL,models=NULL) 
 {
 	stopifnot(inherits(data,"GWASpoly.thresh"))
 
@@ -137,11 +146,6 @@ getQTL <- function(data,snpsAnnFile, gwasModel, ploidy, traits=NULL,models=NULL)
 	if (is.null(models)) models <- colnames(data@scores[[1]])
 	else stopifnot(is.element(models,colnames(data@scores[[1]])))
 
-	if (!is.null (snpsAnnFile)) {
-		msg (">>>> Reading associations...")
-		snpsAnnotations <- read.csv (file=snpsAnnFile, header=T)
-	}
-
 	n.model <- length(models)
 	n.trait <- length(traits)
 	output <- data.frame(NULL)
@@ -150,11 +154,6 @@ getQTL <- function(data,snpsAnnFile, gwasModel, ploidy, traits=NULL,models=NULL)
 		#ix <- which(data@scores[[traits[1]]][,models[j]] > (data@threshold[traits[1],models[j]]) - 1)
 		ix <- which (data@scores[[traits[1]]][,models[j]] != 0)
 		markers <-  data.frame (SNP=data@map[ix,c("Marker")])
-
-		if (!is.null (snpsAnnFile)) 
-			snpAnn  <- merge (markers, snpsAnnotations, by.x="SNP",by.y="SNP_id", sort=F)[,c(2,7)]
-		else
-			snpAnn = "None"
 
 		scores <- data@scores[[1]][,models[j]]
 		datax = calculateInflationFactor (scores)
@@ -173,11 +172,9 @@ getQTL <- function(data,snpsAnnFile, gwasModel, ploidy, traits=NULL,models=NULL)
 						Model=rep(models[j],n.ix),
 						P=pvalues,SCORE=scores, THRESHOLD=thresholds, DIFF=diffs,
 						Effect=round(data@effects[[traits[1]]][ix,models[j]],2))
-						#snpAnn) 
 						#stringsAsFactors=F,check.names=F)
 
 		output <- rbind(output, df)
-		hd (df)
 	}
 	#out <-cbind (Type=gwasModel, output)
 	output <- output [order(-output$GC, -output$DIFF),]
@@ -185,10 +182,10 @@ getQTL <- function(data,snpsAnnFile, gwasModel, ploidy, traits=NULL,models=NULL)
 	outputPositives = output [output$DIFF > 0,]
 	outputNegatives = output [output$DIFF <= 0,]
 
-	outputTotal = rbind (outputPositives, outputNegatives)
-	#return(outputTotal)
-	write.table (file="out-output.scores", output, sep="\t", quote=F, row.names=F)
-	return(outputTotal)
+	outQTLsAllSNPs = rbind (outputPositives, outputNegatives)
+	#return(outQTLsAllSNPs)
+	#write.table (file="out-output.scores", output, sep="\t", quote=F, row.names=F)
+	return(outQTLsAllSNPs)
 }
 
 #-------------------------------------------------------------
