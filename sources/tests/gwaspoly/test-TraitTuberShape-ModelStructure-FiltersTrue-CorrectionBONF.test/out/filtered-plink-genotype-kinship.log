@@ -1,0 +1,25 @@
+PLINK v2.00a2LM 64-bit Intel (13 Dec 2019)
+Options in effect:
+  --bfile out/filtered-plink-genotype
+  --king-cutoff 0.354
+  --out out/filtered-plink-genotype-kinship
+
+Hostname: agro
+Working directory: /dev/shm/tests/test-TraitTuberShape-ModelStructure-FiltersTrue-CorrectionBONF.test
+Start time: Thu Feb 27 01:54:35 2020
+
+Random number seed: 1582786475
+7817 MiB RAM detected; reserving 3908 MiB for main workspace.
+Using up to 4 compute threads.
+100 samples (0 females, 0 males, 100 ambiguous; 100 founders) loaded from
+out/filtered-plink-genotype.fam.
+1779 variants loaded from out/filtered-plink-genotype.bim.
+Note: No phenotype data present.
+--king-cutoff pass 1/1: Scanning for rare variants... done.
+3 variants handled by initial scan (1776 remaining).
+--king-cutoff: 1779 variants processed.
+--king-cutoff: Excluded sample IDs written to
+out/filtered-plink-genotype-kinship.king.cutoff.out.id , and 82 remaining
+sample IDs written to out/filtered-plink-genotype-kinship.king.cutoff.in.id .
+
+End time: Thu Feb 27 01:54:35 2020

@@ -1,0 +1,17 @@
+---
+title: "MultiGWAS Report"
+author:
+- Luis Garreta 
+output: pdf_document
+fontsize: 12pt
+---
+source ("gwas-summary-markdown.R")
+
+
+# 1. Best N ranked SNPs from GWAS analysis
+```{r}
+	# Get the two summary snpsTables: best SNPs, and significative SNPs
+	snpsTables = markersSummaryTable ("in/", "Structure", "Tittle", "out/",  nBEST=7)
+```
+
+

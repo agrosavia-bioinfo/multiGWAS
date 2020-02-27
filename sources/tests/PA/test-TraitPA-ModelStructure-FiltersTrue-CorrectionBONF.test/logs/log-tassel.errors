@@ -1,0 +1,6 @@
+Exception in thread "Thread-7" java.lang.IllegalStateException: CombineDataSetsPlugin: dataSetReturned: this plugin should only return data once per iteration: net.maizegenetics.analysis.data.PlinkLoadPlugin@59e84876
+	at net.maizegenetics.analysis.data.CombineDataSetsPlugin.dataSetReturned(CombineDataSetsPlugin.java:118)
+	at net.maizegenetics.plugindef.ThreadedPluginListener.run(ThreadedPluginListener.java:29)
+Exception in thread "Thread-13" java.lang.IllegalStateException: CombineDataSetsPlugin: dataSetReturned: this plugin should only return data once per iteration: net.maizegenetics.analysis.distance.KinshipPlugin@174d20a
+	at net.maizegenetics.analysis.data.CombineDataSetsPlugin.dataSetReturned(CombineDataSetsPlugin.java:118)
+	at net.maizegenetics.plugindef.ThreadedPluginListener.run(ThreadedPluginListener.java:29)
