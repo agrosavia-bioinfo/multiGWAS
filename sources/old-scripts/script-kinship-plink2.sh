@@ -1,0 +1,1 @@
+/home/lg/agrosavia/development/multiGWAS/development/sources/scripts/script-kinship-plink2.sh

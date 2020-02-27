@@ -1,1 +1,0 @@
-/home/lg/agrosavia/development/multiGWAS/sources/scripts/script-gwaspoly.R
