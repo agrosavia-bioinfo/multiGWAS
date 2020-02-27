@@ -4,6 +4,7 @@
 # AUTHOR: Luis Garreta (lgarreta@agrosavia.co) 
 # DATA  : 12/feb/2020
 # LOGS  :   
+	# r0.96: Running Naive/Structure for SHEsis and Plink with kinship using plink2
 	# r0.95: Added kinship for SHEsis. Drastic modification to runPlink and runShesis. Modified script plink kinship usink plink2
 	# r0.91: Working with rmarkdown (without QR profile)
 	# r0.9: Full functional, but it needs to be improved: own filtes (HWE), SHEsis Full model, corrections and thresholds (FDR, BONF), Manhattan plots
@@ -239,19 +240,40 @@ runPlinkGwas <- function (params)
 runShesisGwas <- function (params) 
 {
 	msg ("Running SHEsis GWAS...")
-	gwasModel = params$gwasModel
 
 	inGenoPheno  = "out/filtered-shesis-genopheno.tbl"
 	inMarkers    = "out/filtered-shesis-markernames.tbl"
 	inMarkersPos = "out/filtered-shesis-markernamespos.tbl"
-	shesisFile   = paste0 ("out/out-SHEsis-", gwasModel)
+	shesisFile   = paste0 ("out/out-SHEsis-", params$gwasModel)
 	scoresFile   = paste0(shesisFile,".scores")
 
-	if (gwasModel %in% c("Naive" ,"Structure")) {
-		cmm=sprintf ("%s/sources/scripts/script-shesis-NaiveModel.sh %s %s %s", HOME, inGenoPheno, inMarkers, shesisFile)
-		runCommand (cmm, "log-SHEsis.log")
-	} else 
+	if (params$gwasModel == "Naive") {
+		gwaspToShesisGenoPheno (params$genotypeFile, params$phenotypeFile)
+	} else if (params$gwasModel == "Structure") {
+		inGeno = "out/filtered-plink-genotype"       # Uses plink file
+		cmm    = sprintf ("%s/sources/scripts/script-kinship-plink2.sh %s", HOME, inGeno)
+		runCommand (cmm, "log-kinship.log")
+
+		# SHEsis: Filter geno/pheno to individuals, write out, and convert to SHEsis format
+		kinshipIndividuals  = read.table (file="out/filtered-plink-genotype-kinship.ped", sep="\t")
+		individuals         = as.character (kinshipIndividuals [,1])
+
+		genotype             = read.csv (file=params$genotypeFile, header=T)
+		phenotype            = read.csv (file=params$phenotypeFile, header=T)
+		genotypeKinship      = genotype [, c(colnames (genotype)[1:3], individuals)]
+		phenotypeKinship     = phenotype [phenotype [,1] %in% individuals,]
+		genotypeFileKinship  = addLabel (params$genotypeFile,  "kinship")
+		phenotypeFileKinship = addLabel (params$phenotypeFile, "kinship")
+		write.table (file=genotypeFileKinship,  genotypeKinship,  row.names=F, quote=F, sep=",")
+		write.table (file=phenotypeFileKinship, phenotypeKinship, row.names=F, quote=F, sep=",")
+
+		gwaspToShesisGenoPheno (genotypeFileKinship, phenotypeFileKinship)
+	}else
 		stop ("Error: unknow GWAS Model")
+
+	# Run SHEsis scritp
+	cmm=sprintf ("%s/sources/scripts/script-shesis-NaiveModel.sh %s %s %s", HOME, inGenoPheno, inMarkers, shesisFile)
+	runCommand (cmm, "log-SHEsis.log")
 
 	# Format data to table with scores and threshold
 	results = read.table (file=scoresFile, header=T, sep="\t")
@@ -403,30 +425,30 @@ convertToToolFormats <- function (genotypeFile, phenotypeFile, gwasModel)
 	#gwaspToShesisGenoPheno ("out/filtered-gwasp4-genotype.tbl", "out/filtered-gwasp4-phenotype.tbl") 
 	#gwaspToShesisGenoPheno (genotypeFile, phenotypeFile)
 
-	if (gwasModel == "Structure") {
-		inGeno   = "out/filtered-plink-genotype"       # Only prefix for Plink
-
-		# FIRST: kinship filtering of .ped file
-		cmm=sprintf ("%s/sources/scripts/script-kinship-plink2.sh %s", HOME, inGeno)
-		runCommand (cmm, "log-kinship.log")
-
-		# SHEsis: Filter geno/pheno to individuals, write out, and convert to SHEsis format
-		kinshipIndividuals  = read.table (file="out/filtered-plink-genotype-kinship.ped", sep="\t")
-		individuals = as.character (kinshipIndividuals [,1])
-
-		genotype         = read.csv (file=genotypeFile, header=T)
-		newCols = c(colnames (genotype)[1:3], individuals)
-		hd (newCols)
-		phenotype        = read.csv (file=phenotypeFile, header=T)
-		genotypeKinship  = genotype [, newCols]
-		phenotypeKinship = phenotype [phenotype [,1] %in% individuals,]
-		genotypeFileKinship  = addLabel (genotypeFile,  "kinship")
-		phenotypeFileKinship = addLabel (phenotypeFile, "kinship")
-		write.table (file=genotypeFileKinship,  genotypeKinship,  row.names=F, quote=F, sep=",")
-		write.table (file=phenotypeFileKinship, phenotypeKinship, row.names=F, quote=F, sep=",")
-
-		gwaspToShesisGenoPheno (genotypeFileKinship, phenotypeFileKinship)
-	}
+#	if (gwasModel == "Structure") {
+#		inGeno   = "out/filtered-plink-genotype"       # Only prefix for Plink
+#
+#		# FIRST: kinship filtering of .ped file
+#		cmm=sprintf ("%s/sources/scripts/script-kinship-plink2.sh %s", HOME, inGeno)
+#		runCommand (cmm, "log-kinship.log")
+#
+#		# SHEsis: Filter geno/pheno to individuals, write out, and convert to SHEsis format
+#		kinshipIndividuals  = read.table (file="out/filtered-plink-genotype-kinship.ped", sep="\t")
+#		individuals = as.character (kinshipIndividuals [,1])
+#
+#		genotype         = read.csv (file=genotypeFile, header=T)
+#		newCols = c(colnames (genotype)[1:3], individuals)
+#		hd (newCols)
+#		phenotype        = read.csv (file=phenotypeFile, header=T)
+#		genotypeKinship  = genotype [, newCols]
+#		phenotypeKinship = phenotype [phenotype [,1] %in% individuals,]
+#		genotypeFileKinship  = addLabel (genotypeFile,  "kinship")
+#		phenotypeFileKinship = addLabel (phenotypeFile, "kinship")
+#		write.table (file=genotypeFileKinship,  genotypeKinship,  row.names=F, quote=F, sep=",")
+#		write.table (file=phenotypeFileKinship, phenotypeKinship, row.names=F, quote=F, sep=",")
+#
+#		gwaspToShesisGenoPheno (genotypeFileKinship, phenotypeFileKinship)
+#	}
 
 }
 #-------------------------------------------------------------

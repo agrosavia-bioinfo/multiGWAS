@@ -1,102 +1,0 @@
-PLINK v1.90b6.12 64-bit (28 Oct 2019)          www.cog-genomics.org/plink/1.9/
-(C) 2005-2019 Shaun Purcell, Christopher Chang   GNU General Public License v3
-Logging to out/filtered-plink-genotype.log.
-Options in effect:
-  --file out/filtered-plink-genotype
-  --make-bed
-  --out out/filtered-plink-genotype
-
-7829 MB RAM detected; reserving 3914 MB for main workspace.
-Allocated 2935 MB successfully, after larger attempt(s) failed.
-Scanning .ped file... 0%1%1%1%1%1%1%2%2%2%2%2%2%3%3%3%3%3%3%4%4%4%4%4%4%5%5%5%5%5%5%6%6%6%6%6%6%7%7%7%7%7%7%8%8%8%8%8%8%9%9%9%9%9%9%10%10%10%10%10%10%11%11%11%11%11%11%12%12%12%12%12%12%13%13%13%13%13%13%14%14%14%14%14%14%15%15%15%15%15%15%16%16%16%16%16%16%17%17%17%17%17%17%18%18%18%18%18%18%19%19%19%19%19%19%20%20%20%20%20%20%21%21%21%21%21%21%22%22%22%22%22%22%23%23%23%23%23%23%24%24%24%24%24%24%25%25%25%25%25%25%26%26%26%26%26%26%27%27%27%27%27%27%28%28%28%28%28%28%29%29%29%29%29%29%30%30%30%30%30%30%31%31%31%31%31%31%32%32%32%32%32%32%33%33%33%33%33%33%34%34%34%34%34%34%35%35%35%35%35%35%36%36%36%36%36%36%37%37%37%37%37%37%38%38%38%38%38%38%39%39%39%39%39%39%40%40%40%40%40%40%41%41%41%41%41%41%42%42%42%42%42%42%43%43%43%43%43%43%44%44%44%44%44%44%45%45%45%45%45%45%46%46%46%46%46%46%47%47%47%47%47%47%48%48%48%48%48%48%49%49%49%49%49%49%50%50%50%50%50%51%51%51%51%51%51%52%52%52%52%52%52%53%53%53%53%53%53%54%54%54%54%54%54%55%55%55%55%55%55%56%56%56%56%56%56%57%57%57%57%57%57%58%58%58%58%58%58%59%59%59%59%59%59%60%60%60%60%60%60%61%61%61%61%61%61%62%62%62%62%62%62%63%63%63%63%63%63%64%64%64%64%64%64%65%65%65%65%65%65%66%66%66%66%66%66%67%67%67%67%67%67%68%68%68%68%68%68%69%69%69%69%69%69%70%70%70%70%70%70%71%71%71%71%71%71%72%72%72%72%72%72%73%73%73%73%73%73%74%74%74%74%74%74%75%75%75%75%75%75%76%76%76%76%76%76%77%77%77%77%77%77%78%78%78%78%78%78%79%79%79%79%79%79%80%80%80%80%80%80%81%81%81%81%81%81%82%82%82%82%82%82%83%83%83%83%83%83%84%84%84%84%84%84%85%85%85%85%85%85%86%86%86%86%86%86%87%87%87%87%87%87%88%88%88%88%88%88%89%89%89%89%89%89%90%90%90%90%90%90%91%91%91%91%91%91%92%92%92%92%92%92%93%93%93%93%93%93%94%94%94%94%94%94%95%95%95%95%95%95%96%96%96%96%96%96%97%97%97%97%97%97%98%98%98%98%98%98%99%99%99%99%99%100%.ped scan complete (for binary autoconversion).
-Performing single-pass .bed write (2008 variants, 598 people).
-0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%--file: out/filtered-plink-genotype-temporary.bed +
-out/filtered-plink-genotype-temporary.bim +
-out/filtered-plink-genotype-temporary.fam written.
-2008 variants loaded from .bim file.
-598 people (0 males, 0 females, 598 ambiguous) loaded from .fam.
-Ambiguous sex IDs written to out/filtered-plink-genotype.nosex .
-Using 1 thread (no multithreaded calculations invoked).
-Before main variant filters, 598 founders and 0 nonfounders present.
-Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
-Total genotyping rate is 0.993662.
-2008 variants and 598 people pass filters and QC.
-Note: No phenotypes present.
---make-bed to out/filtered-plink-genotype.bed + out/filtered-plink-genotype.bim
-+ out/filtered-plink-genotype.fam ... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
-KING 2.2.4 - (c) 2010-2019 Wei-Min Chen
-
-The following parameters are in effect:
-                   Binary File : out/filtered-plink-genotype.bed (-bname)
-
-Additional Options
-         Close Relative Inference : --related, --duplicate
-   Pairwise Relatedness Inference : --kinship, --ibdseg, --ibs, --homog
-              Inference Parameter : --degree [2]
-         Relationship Application : --unrelated [ON], --cluster, --build
-                        QC Report : --bysample, --bySNP, --roh, --autoQC
-                     QC Parameter : --callrateN, --callrateM
-             Population Structure : --pca, --mds
-              Structure Parameter : --projection, --pcs
-              Disease Association : --tdt
-   Quantitative Trait Association : --mtscore
-                Association Model : --trait [], --covariate []
-            Association Parameter : --invnorm, --maxP
-               Genetic Risk Score : --risk, --model [], --prevalence, --noflip
-              Computing Parameter : --cpus
-                   Optional Input : --fam [], --bim [], --sexchr [23]
-                           Output : --prefix [out/out-Plink-Structure-],
-                                    --rpath [], --rplot
-
-KING starts at Fri Jan 24 16:40:31 2020
-Loading genotype data in PLINK binary format...
-Read in PLINK fam file out/filtered-plink-genotype.fam...
-  PLINK pedigrees loaded: 598 samples
-Read in PLINK bim file out/filtered-plink-genotype.bim...
-  Genotype data consist of 2008 autosome SNPs
-  PLINK maps loaded: 2008 SNPs
-Read in PLINK bed file out/filtered-plink-genotype.bed...
-0%6%13%19%25%31%38%44%50%56%63%69%75%81%88%  PLINK binary genotypes loaded.
-94%  KING format genotype data successfully converted.
-
-Options in effect:
-	--unrelated
-	--degree 2
-	--prefix out/out-Plink-Structure-
-
-Family clustering starts at Fri Jan 24 16:40:32 2020
-Autosome genotypes stored in 32 words for each of 598 individuals.
-Sorting autosomes...
-No informative IBD segments.
-  Inference will be based on kinship estimation only.
-2 CPU cores are used to compute the pairwise kinship coefficients...
-Clustering up to 2nd-degree relatives in families...
-Individual IDs are unique across all families.
-No families were found to be connected.
-
-A list of 598 unrelated individuals saved in file out/out-Plink-Structure-unrelated.txt
-An alternative list of 0 to-be-removed individuals saved in file out/out-Plink-Structure-unrelated_toberemoved.txt
-
-Extracting a subset of unrelated individuals ends at Fri Jan 24 16:40:32 2020
-KING ends at Fri Jan 24 16:40:32 2020
-PLINK v1.90b6.12 64-bit (28 Oct 2019)          www.cog-genomics.org/plink/1.9/
-(C) 2005-2019 Shaun Purcell, Christopher Chang   GNU General Public License v3
-Logging to out/filtered-plink-genotype.log.
-Options in effect:
-  --bfile out/filtered-plink-genotype
-  --out out/filtered-plink-genotype
-  --recode tab
-
-7829 MB RAM detected; reserving 3914 MB for main workspace.
-Allocated 2935 MB successfully, after larger attempt(s) failed.
-2008 variants loaded from .bim file.
-598 people (0 males, 0 females, 598 ambiguous) loaded from .fam.
-Ambiguous sex IDs written to out/filtered-plink-genotype.nosex .
-Using 1 thread (no multithreaded calculations invoked).
-Before main variant filters, 598 founders and 0 nonfounders present.
-Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
-Total genotyping rate is 0.993662.
-2008 variants and 598 people pass filters and QC.
-Note: No phenotypes present.
---recode ped to out/filtered-plink-genotype.ped +
-out/filtered-plink-genotype.map ... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.

@@ -18,7 +18,7 @@ cmm="plink2 --bfile $PLINKPREFIXFILE --king-cutoff 0.354 --out $OUTFILE"
 echo -e "\n>>>>" $cmm "\n"
 eval $cmm
 
- Out filenames
+# Out filenames
 outRelatedFile=$OUTFILE.king.cutoff.out.id
 outUnRelatedFile=$OUTFILE.king.cutoff.in.id
 

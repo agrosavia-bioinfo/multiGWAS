@@ -6,9 +6,9 @@ Options in effect:
 
 Hostname: agro
 Working directory: /home/lg/agrosavia/development/multiGWAS/example/example.test
-Start time: Thu Feb 13 16:24:36 2020
+Start time: Thu Feb 27 10:05:10 2020
 
-Random number seed: 1581629076
+Random number seed: 1582815910
 7817 MB RAM detected; reserving 3908 MB for main workspace.
 1779 variants loaded from .bim file.
 100 people (0 males, 0 females, 100 ambiguous) loaded from .fam.
@@ -23,4 +23,4 @@ Note: No phenotypes present.
 --recode ped to out/example-gwaspoly-genotype-tetra-ACGT-COMMON-plink-QC.ped +
 out/example-gwaspoly-genotype-tetra-ACGT-COMMON-plink-QC.map ... done.
 
-End time: Thu Feb 13 16:24:36 2020
+End time: Thu Feb 27 10:05:10 2020
