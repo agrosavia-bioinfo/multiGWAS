@@ -55,7 +55,7 @@ controlPopulationStratification <- function (data1, gwasModel, data2)
 		dataTmp      <- set.K (data1, K=kinshipMatrix)
 		#dataTmp      <- set.K (data1, K=NULL)
 		data2        = new ("GWASpolyStruct", dataTmp)
-	}else if (gwasModel == "Structure") {
+	}else if (gwasModel == "Full") {
 		msg ("    >>>> Using default Kinship and PCs=5 ")
 		kinshipMatrix = NULL
 		dataTmp       = set.K (data1)

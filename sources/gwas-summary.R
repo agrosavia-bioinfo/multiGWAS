@@ -4,33 +4,24 @@
 # AUTHOR : Luis Garreta (lgarreta@agrosavia.co)
 # DATA   : feb/2020
 # LOG: 
+#	r4.1: Fixed transparency and axis error (options (bitmapType="cairo"))
 #	r4.0: Modified to work with markdown, but better to only report outputs (PNGs) to be included by markdown
 #	r3.0: Manhattan and QQ plots. Formated to create a Markdown report (not yet)
 #	r2.0: Improve selection of data from tables. Titles to graphics and files
 #	r1.0: Message to log files
-#	r0.9: Full working with funtions: create snpsTables and ven diagrams using parameters
+#	r0.9: Full working with funtions: create snpTables and ven diagrams using parameters
 #	r0.8: Create venn diagrams, summary table of first Ns"
 #     
 
-## @knitr loadLibraries
-suppressMessages (library (stringr))
+
 suppressMessages (library (dplyr))
 suppressMessages (library (qqman))
 suppressMessages (library (VennDiagram))
 suppressMessages (library (config))  # For read config file
-KNITFLAG=TRUE
 
-options (width=300)
+options (bitmapType="cairo", width=300)
 #options(scipen=999)
 
-## @knitr initParams
-#inputDir    = "in/"
-#outputDir   = "out/"
-#gwasModel    = "Structure"
-#reportTitle = "GWAS Report"
-#nBest = 6
-
-## kinitr main
 #-------------------------------------------------------------
 # Main function
 # Input files are taken from input dir
@@ -40,11 +31,9 @@ main <- function () {
 
 	msg ("Main...")
 
-	KNITFLAG <<- FALSE
-
 	inputDir    = "out/"
 	outputDir   = "report/"
-	gwasModel    = "Structure"
+	gwasModel    = "Full"
 	reportTitle = "GWAS Report"
 	nBest = 6
 
@@ -59,7 +48,7 @@ main <- function () {
 #   4- 1 Venn diagram of significative SNPs
 #	5- 1 multiplot of 4x4 manhattan and QQ plots
 #-------------------------------------------------------------
-createReports <- function (inputDir, gwasModel, outputDir, nBest=7) 
+createReports <- function (inputDir, genotypeFile, phenotypeFile, gwasModel, outputDir, nBest=7) 
 {
 	msg ("Creating reports for ", gwasModel, "...")
 	createDir (outputDir)
@@ -67,33 +56,47 @@ createReports <- function (inputDir, gwasModel, outputDir, nBest=7)
 	msg ("Writing table input config parameters...")
 	writeConfigurationParameters (inputDir, outputDir)
 
-	msg ("Writting table with summary results...")
-	snpsTables = markersSummaryTable (inputDir, gwasModel, outputDir,  nBest)
+	msg ("Writing table with summary results...")
+	snpTables = markersSummaryTable (inputDir, gwasModel, outputDir,  nBest)
 
 	msg ("Writing table with ", nBest, " best ranked SNPs Table...")
 	outName = paste0(outputDir, "/out-multiGWAS-scoresTable-best.scores")
-	write.table (file=outName, snpsTables$best, row.names=F,quote=F, sep="\t")
+	write.table (file=outName, snpTables$best, row.names=F,quote=F, sep="\t")
 
 	msg ("Writing table with significative SNPs...")
 	outName = paste0(outputDir, "/out-multiGWAS-scoresTable-significatives.scores")
-	write.table (file=outName, snpsTables$significatives, row.names=F,quote=F, sep="\t")
+	write.table (file=outName, snpTables$significatives, row.names=F,quote=F, sep="\t")
 
 	msg ("Writing Venn diagram with best SNPs...")
-	outFilename = paste0(outputDir,"/out-multiGWAS-vennDiagram-best.png")
-	png (outFilename, res=72)
-	commonBest = markersVennDiagrams (snpsTables$best, gwasModel, "Best")
+	png (paste0 (outputDir,"/out-multiGWAS-vennDiagram-best.png"), res=72)
+	commonBest = markersVennDiagrams (snpTables$best, gwasModel, "Best")
+	dev.off()
+	pdf (paste0 (outputDir,"/out-multiGWAS-vennDiagram-best.pdf"))
+	commonBest = markersVennDiagrams (snpTables$best, gwasModel, "Best")
 	dev.off()
 
 	msg ("Writing Venn diagram with significative SNPs...")
-	outFilename = paste0(outputDir,"/out-multiGWAS-vennDiagram-significatives.png")
-	png (outFilename, res=72)
-	commonSign = markersVennDiagrams (snpsTables$significatives, gwasModel, "Significatives")
+	outFilename = 
+	png (paste0 (outputDir,"/out-multiGWAS-vennDiagram-significatives.png"), res=72)
+	commonSign = markersVennDiagrams (snpTables$significatives, gwasModel, "Significatives")
+	dev.off ()
+	pdf (paste0 (outputDir,"/out-multiGWAS-vennDiagram-significatives.pdf"))
+	commonSign = markersVennDiagrams (snpTables$significatives, gwasModel, "Significatives")
 	dev.off ()
 
 	msg ("Writing Manhattan and QQ plots...")
-	png (paste0 (outputDir, "/out-multiGWAS-manhattanQQ-plots.png"), width=11, height=15, units="in", res=320)
-	markersManhattanPlots (inputDir, gwasModel, commonBest, commonSign, snpsTables$significatives, outputDir)
+	png (paste0 (outputDir, "/out-multiGWAS-manhattanQQ-plots.png"), width=11, height=15, units="in", res=120)
+	op=markersManhattanPlots (inputDir, gwasModel, commonBest, commonSign, snpTables$significatives, outputDir)
 	dev.off()
+	pdf (paste0 (outputDir, "/out-multiGWAS-manhattanQQ-plots.pdf"), width=11, height=15)
+	op=markersManhattanPlots (inputDir, gwasModel, commonBest, commonSign, snpTables$significatives, outputDir)
+	par (op)
+	dev.off()
+
+	msg ("Creating SNP heatmaps for the 4 best ranked SNPs...")
+	genoNumericFilename = ACGTToNumericGenotypeFormat (genotypeFile)
+	snpList = snpTables$best$SNP [1:4]
+	createHeatmapForSNPList (outputDir, genotypeFile, genoNumericFilename, phenotypeFile, commonSign)
 }
 
 #-------------------------------------------------------------
@@ -140,12 +143,12 @@ markersManhattanPlots <- function (inputDir, gwasModel, commonBest, commonSign, 
 			tool = "SHEsis"
 			gwasResults = data.frame (SNP=data$SNP, CHR=data$CHR, BP=data$POS, P=10^-data$SCORE)
 		}
-		else if (grepl ("Plink", filename)) {
-			tool = "Plink"
+		else if (grepl ("PLINK", filename)) {
+			tool = "PLINK"
 			gwasResults = data.frame (SNP=data$SNP, CHR=data$CHR, BP=data$POS, P=10^-data$SCORE)
 		}
-		else if (grepl ("Tassel", filename)) {
-			tool = "Tassel"
+		else if (grepl ("TASSEL", filename)) {
+			tool = "TASSEL"
 			gwasResults = data.frame (SNP=data$Marker, CHR=data$Chr, BP=data$Pos, P=10^-data$SCORE)
 		}
 		ss = summarySignificatives
@@ -155,7 +158,7 @@ markersManhattanPlots <- function (inputDir, gwasModel, commonBest, commonSign, 
 			signThresholdScore = 0.95*ceiling (data[1, "SCORE"]) 
 
 		colorsBlueOrange = c("blue4", "orange3")
-		manhattan(gwasResults,col = c("gray10", "gray60"), highlight=commonBest, annotatePval=bestThreshold, annotateTop=F,
+		manhattan(gwasResults,col = c("gray10", "gray60"), highlight=intersect (commonBest, gwasResults$SNP), annotatePval=bestThreshold, annotateTop=F,
 				  suggestiveline=bestThresholdScore, genomewideline=signThresholdScore, main=mainTitle, logp=T, cex=2)
 
 		text (x=0, y=signThresholdScore*1.02, "Significative",, col="red", pos=4)
@@ -166,8 +169,9 @@ markersManhattanPlots <- function (inputDir, gwasModel, commonBest, commonSign, 
 		mtext (bquote(lambda[GC] == .(datax$delta)), side=3, line=-2, cex=0.7)
 		#title (bquote(lambda[GC] == .(datax$delta)))
 	}
-	par (op)
+	#par (op)
 	#dev.off()
+	return (op)
 }
 
 #------------------------------------------------------------------------
@@ -179,15 +183,15 @@ markersVennDiagrams <- function (summaryTable, gwasModel, scoresType){
 	x <- list()
 	x$GWASpoly = summaryTable %>% filter (TOOL %in% "GWASpoly") %>% select (SNP) %>% .$SNP
 	x$SHEsis   = summaryTable %>% filter (TOOL %in% "SHEsis") %>% select (SNP) %>% .$SNP
-	x$Plink    = summaryTable %>% filter (TOOL %in% "Plink")  %>% select (SNP) %>% .$SNP
-	x$Tassel   = summaryTable %>% filter (TOOL %in% "Tassel") %>% select (SNP) %>% .$SNP
+	x$PLINK    = summaryTable %>% filter (TOOL %in% "PLINK")  %>% select (SNP) %>% .$SNP
+	x$TASSEL   = summaryTable %>% filter (TOOL %in% "TASSEL") %>% select (SNP) %>% .$SNP
 
 	a = intersect (x$GWASpoly, x$SHEsis)
-	b = intersect (x$GWASpoly, x$Plink)
-	c = intersect (x$GWASpoly, x$Tassel)
-	d = intersect (x$SHEsis,   x$Plink)
-	e = intersect (x$SHEsis,   x$Tassel)
-	f = intersect (x$Plink,    x$Tassel)
+	b = intersect (x$GWASpoly, x$PLINK)
+	c = intersect (x$GWASpoly, x$TASSEL)
+	d = intersect (x$SHEsis,   x$PLINK)
+	e = intersect (x$SHEsis,   x$TASSEL)
+	f = intersect (x$PLINK,    x$TASSEL)
 	#commonSNPs = intersect (intersect (x$GWASpoly, x$SHEsis), intersect(x$Plink, x$Tassel))
 	commonSNPs = union (union (a,b),union (union (c,d),union (e,f)))
 
@@ -216,7 +220,6 @@ markersVennDiagrams <- function (summaryTable, gwasModel, scoresType){
 #------------------------------------------------------------------------
 # Create a summary table of best and significative markers
 #------------------------------------------------------------------------
-## @knitr markersSummaryTable
 markersSummaryTable <- function (inputDir, gwasModel, outputDir="out", nBest=5) {
 
 	map = read.table (file=paste0(inputDir,"/map.tbl"))
@@ -231,7 +234,7 @@ markersSummaryTable <- function (inputDir, gwasModel, outputDir="out", nBest=5) 
 	for (f in files) {
 		msg ("Processing file: ", f)
 		data <- read.table (file=f, header=T)
-		if (nrow(data)>nBest) data=data [1:nBest,] 
+		#if (nrow(data)>nBest) data=data [1:nBest,] 
 		pVal	<- data$P
 		pscores <- data$SCORE
 		tscores <- data$THRESHOLD
@@ -244,14 +247,14 @@ markersSummaryTable <- function (inputDir, gwasModel, outputDir="out", nBest=5) 
 			chrom   <- data$Chrom
 			pos	    <- data$Position
 			flagNewData = T
-		}else if (grepl ("Plink", f)) {
-			tool    = "Plink"
+		}else if (grepl ("PLINK", f)) {
+			tool    = "PLINK"
 			snps    = data$SNP
 			chrom   = data$CHR
 			pos	    = map [snps, "Position"]
 			flagNewData = T
-		}else if (grepl ("Tassel", f)) {
-			tool    = "Tassel"
+		}else if (grepl ("TASSEL", f)) {
+			tool    = "TASSEL"
 			snps    = data$Marker
 			chrom   = data$Chr
 			pos		= data$Pos
@@ -264,15 +267,17 @@ markersSummaryTable <- function (inputDir, gwasModel, outputDir="out", nBest=5) 
 			flagNewData = T
 		}
 		if (flagNewData==T) {
-			dfm = data.frame (TOOL=tool, MODEL=gwasModel, CHR=chrom, POS=pos, SNP=snps, P = round (pVal,6), SCORE=pscores, THRESHOLD=tscores, SIGNF=signf )
+			dfm = data.frame (TOOL=tool, MODEL=gwasModel, CHROM=chrom, POSITION=pos, SNP=snps, 
+							  PVALUE = round (pVal,6), SCORE=pscores, THRESHOLD=tscores, SIGNIFICANCE=signf )
 			dfm = dfm %>% distinct (SNP, .keep_all=T)
+			if (nrow(dfm)>nBest) dfm=dfm [1:nBest,] 
 			summaryTable <- rbind (summaryTable, dfm)
 			flagNewData = F
 		}
 	}
 
-	summaryTable = summaryTable [which(!is.na(summaryTable$SIGNF)),]
-	summarySignificatives = summaryTable %>% filter (SIGNF%in%T) 
+	summaryTable = summaryTable [which(!is.na(summaryTable$SIGNIFICANCE)),]
+	summarySignificatives = summaryTable %>% filter (SIGNIFICANCE%in%T) 
 
 	return (list (best=summaryTable, significatives=summarySignificatives))
 }
@@ -298,10 +303,8 @@ hd <- function (data, m=10,n=10) {
 ## @knitr msg
 msg <- function (...) 
 {
-	if (KNITFLAG==FALSE) { 
 		messages = unlist (list (...))
 		cat (">>>>", messages, "\n")
-	}
 }
 
 #-------------------------------------------------------------
@@ -354,11 +357,11 @@ writeConfigurationParameters <- function (inputDir, outputDir)
 	paramsDF = data.frame (PARAMETER=character(), VALUE=character ())
 	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="Genotype filename", VALUE=toString (params$genotypeFile)))
 	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="Phenotype filename", VALUE=toString (params$phenotypeFile)))
-	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="Significance level", VALUE=toString (params$significanceLevel)))
-	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="Correction method", VALUE=toString (params$correctionMethod)))
-	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="Trait", VALUE=toString (params$trait)))
-	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="GWAS model", VALUE=toString (params$gwasModel)))
-	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="Filtering", VALUE=toString (params$filtering)))
+	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="Significance level (Genome-wide significance level)", VALUE=toString (params$significanceLevel)))
+	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="Correction method (Bonferroni or FDR)", VALUE=toString (params$correctionMethod)))
+	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="GWAS model (Full or Naive)", VALUE=toString (params$gwasModel)))
+	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="nBest (Number of best-ranked SNPs to be reported)", VALUE=toString (params$nBest)))
+	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="Filtering (TRUE or FALSE)", VALUE=toString (params$filtering)))
 	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="MIND Filter (Individual with missing genotype)", VALUE=toString (params$MIND)))
 	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="GENO Filter (SNPs with missing genotype)", VALUE=toString (params$GENO)))
 	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="MAF Filter (Minor allele frequency)", VALUE=toString (params$MAF)))

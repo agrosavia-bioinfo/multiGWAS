@@ -1,0 +1,4 @@
+export (calibrate,canocor,circle,dlines,origin,ones,PrinCoor,rad2degree,rda,shiftvector,textxy)
+import (MASS)
+importFrom("graphics", "lines", "par", "points", "text")
+importFrom("stats", "cor", "dist", "princomp", "var")

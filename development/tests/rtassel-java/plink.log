@@ -1,0 +1,13 @@
+PLINK v1.90b6.12 64-bit (28 Oct 2019)
+Options in effect:
+  --file filtered-plink-genotype
+  --recode hmp
+
+Hostname: agro
+Working directory: /home/lg/agrosavia/development/multiGWAS-min/tests/rtassel-java
+Start time: Fri Mar 20 15:36:50 2020
+
+Error: Invalid --recode parameter 'hmp'. (Did you forget '--out'?)
+For more information, try "plink --help <flag name>" or "plink --help | more".
+
+End time: Fri Mar 20 15:36:50 2020

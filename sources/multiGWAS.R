@@ -4,24 +4,18 @@
 # AUTHOR: Luis Garreta (lgarreta@agrosavia.co) 
 # DATA  : 12/feb/2020
 # LOGS  :   
-	# r0.96: Running Naive/Structure for SHEsis and Plink with kinship using plink2
+	# r0.982: Added local libs inside code. Dynamic markdown in pdf and html. Trait in report
+	# r0.98: Changed "Structure" by "Full"
+	# r0.96: Running Naive/Full for SHEsis and Plink with kinship using plink2
 	# r0.95: Added kinship for SHEsis. Drastic modification to runPlink and runShesis. Modified script plink kinship usink plink2
 	# r0.91: Working with rmarkdown (without QR profile)
 	# r0.9: Full functional, but it needs to be improved: own filtes (HWE), SHEsis Full model, corrections and thresholds (FDR, BONF), Manhattan plots
-	# r12.0: Fixed preprocessing using read.GWASpoly. Fixed getQTLs for gwaspoly gwas. Full functionality
-	# r11.0: Improved naive with unity kinship matrix. Results according to plink and tassel. It needs to show in summary
-	# r10.0: Fixed convertion of tetra to diplos. Excelent results with gwaspoly data
-	# r8.0: Full summary, reorganized scores tables, checked scores/thresholds, two correction methods: FDR, BONF. 
 
 # Constants
-DEBUG              = T
-LOAD_DATA          = FALSE
+DEBUG              = F
 SIGNIFICANCE_LEVEL = 0.05      # Minimun level of significance (alpha) to considerer a significant SNP
-MAX_BEST           = 8         # Max number of SNPs of best scored SNPs to show in tables and graphics
 
 args = commandArgs(trailingOnly = TRUE)
-#args = c("config-TraitPA-ModelStructure-FiltersFalse-CorrectionBONF.config")
-#args = c("in/config-Gota-Naive-filtersNone-impute.config")
 #args = c("config-TraitTuberShape-ModelNaive-FiltersTrue-CorrectionBONF.config")
 
 USAGE="USAGE: Rscript gwas-polypiline.R <config file>"
@@ -33,17 +27,20 @@ if (length (args) != 1) {
 # Load required packages
 #-------------------------------------------------------------
 HOME = Sys.getenv ("MULTIGWAS_HOME")
-library (GWASpoly) #
-library (parallel) #
-suppressMessages(library (config))  # For read config file
+.libPaths (paste0(HOME, "/opt/Rlibs"))
+
+suppressMessages (library (GWASpoly)) #
+suppressMessages (library (parallel)) #
+suppressMessages (library (config))  # For read config file
 
 # New class for gwaspoly
 setClass ("GWASpolyStruct", slots=c(params="list"), contains="GWASpoly.K")
 
 options (width=300)
-source (paste0 (HOME, "/sources/gwas-preprocessing.R"))     # Module with functions to convert between different genotype formats 
-source (paste0 (HOME, "/sources/gwas-summary.R"))           # Module with functions to create summaries: tables and venn diagrams
-source (paste0 (HOME, "/sources/scripts/script-gwaspoly.R"))       # Module with gwaspoly functions
+source (paste0 (HOME, "/sources/gwas-preprocessing.R"))      # Module with functions to convert between different genotype formats 
+source (paste0 (HOME, "/sources/gwas-summary.R"))            # Module with functions to create summaries: tables and venn diagrams
+source (paste0 (HOME, "/sources/gwas-heatmap.R"))            # Module with functions to create summaries: tables and venn diagrams
+source (paste0 (HOME, "/sources/scripts/script-gwaspoly.R")) # Module with gwaspoly functions
 
 #-------------------------------------------------------------
 # Global configs
@@ -74,24 +71,24 @@ main <- function (args)
 
 	# Run the four tools in parallel
 	#runPlinkGwas (config)
+	#runTasselGwas (config)
 	#runGwaspolyGwas (config)
 	#runShesisGwas (config)
 	mclapply (c("Gwasp", "Plink", "SHEsis", "Tassel"), runGWASTools, config, mc.cores=4)
 
 	# Create reports
-	createReports (config$outputDir , config$gwasModel, config$reportDir, nBest=7)
-
-	# Create outputs: tables, figures
-	##title = gsub(".*\\config-(.*)\\..*", "\\1", c(configFile))
-	##markersSummaryTable ("out/", config$gwasModel, title,  "out/", nBEST=MAX_BEST, significanceLevel=config$signficanceLevel)
+	createReports (config$outputDir, config$genotypeFile, config$phenotypeFile, 
+				   config$gwasModel, config$reportDir, nBest=as.integer (config$nBest))
 
 	# Move out files to output dir
 	moveOutFiles (config$outputDir, config$reportDir)
 
 	# Call to rmarkdown report
-	msg ("Creating markdown report...")
+	msg ("Creating html markdown report...")
 	outputFile = paste0 (workingDir, "/multiGWAS-report.html")
-	rmarkdown::render (paste0(HOME,"/sources/gwas-markdown.Rmd"), output_file=outputFile,  params=list (workingDir=workingDir))
+	title      = paste0 ("MultiGWAS report for ", config$gwasModel, " GWAS model")
+	rmarkdown::render (paste0(HOME,"/sources/gwas-markdown.Rmd"), output_file=outputFile, output_format="html_document", 
+					   params=list (workingDir=workingDir, reportTitle=title, nBest=config$nBest))
 }
 #-------------------------------------------------------------
 # Create dir, if it exists, it is renamed as old-XXXX
@@ -99,7 +96,8 @@ main <- function (args)
 #-------------------------------------------------------------
 initOutputDir <- function (configFile, genotypeFile, phenotypeFile) 
 {
-	outDir   = gsub ("config","test", configFile)
+	#outDir   = gsub ("config","test", configFile)
+	outDir   = paste0 ("out-", strsplit (configFile, split="[.]") [[1]][1])
 	msg ("Output dir: ", outDir)
 	createDir (outDir)
 	system (sprintf ("cp %s %s", configFile, outDir))
@@ -190,13 +188,13 @@ runPlinkGwas <- function (params)
 
 	inGeno   = "out/filtered-plink-genotype"       # Only prefix for Plink
 	inPheno  = "out/filtered-plink-phenotype.tbl"  
-	outFile  = paste0 ("out/out-Plink-", model)
+	outFile  = paste0 ("out/out-PLINK-", model)
 	outPlink = paste0(outFile,".TRAIT.assoc.linear.adjusted")
 
 	if (model=="Naive") { 
 		cmm=sprintf ("%s/sources/scripts/script-plink-NaiveModel.sh %s %s %s", HOME,inGeno, inPheno, outFile)
 		runCommand (cmm, "log-Plink.log")
-	}else if (model=="Structure") {
+	}else if (model=="Full") {
 		# FIRST: kinship filtering of .ped file
 		cmm=sprintf ("%s/sources/scripts/script-kinship-plink2.sh %s", HOME, inGeno)
 		runCommand (cmm, "log-kinship.log")
@@ -249,7 +247,7 @@ runShesisGwas <- function (params)
 
 	if (params$gwasModel == "Naive") {
 		gwaspToShesisGenoPheno (params$genotypeFile, params$phenotypeFile)
-	} else if (params$gwasModel == "Structure") {
+	} else if (params$gwasModel == "Full") {
 		inGeno = "out/filtered-plink-genotype"       # Uses plink file
 		cmm    = sprintf ("%s/sources/scripts/script-kinship-plink2.sh %s", HOME, inGeno)
 		runCommand (cmm, "log-kinship.log")
@@ -309,14 +307,14 @@ runTasselGwas <- function (params)
 	inGenoPED  = "out/filtered-plink-genotype.ped"
 	inGenoMAP  = "out/filtered-plink-genotype.map"
 	inPhenoTBL = "out/filtered-tassel-phenotype.tbl"
-	outPrefix  = paste0("out/out-Tassel-", model)
+	outPrefix  = paste0("out/out-TASSEL-", model)
 
 	if (model=="Naive") {
 		cmm=sprintf ("%s/sources/scripts/script-tassel-NaiveModel.sh %s %s %s %s",
 					 HOME,inGenoPED, inGenoMAP, inPhenoTBL, outPrefix)
 		runCommand (cmm, "log-tassel.log")
 		outFile   = list.files("out/", pattern=sprintf("^(.*(%s).*(1).*(txt)[^$]*)$",model), full.names=T)
-	}else if (model=="Structure") {
+	}else if (model=="Full") {
 		cmm=sprintf ("%s/sources/scripts/script-tassel-FullModel.sh %s %s %s %s",
 					 HOME, inGenoPED, inGenoMAP, inPhenoTBL, outPrefix)
 		runCommand (cmm, "log-tassel.log")
@@ -326,14 +324,7 @@ runTasselGwas <- function (params)
 	
 	# Rename output file
 	msg ("Tassel output file: ", outFile)
-	outTassel = sprintf ("out/out-Tassel-%s.scores", model)
-
-	# Data preprocessing: Test correction, sort and rename output file
-	#ts      = read.table (file=outFile, header=T, sep="\t")
-	#tsAdj   = ts %>% mutate (adjP=p.adjust(p,"fdr"),adjPadd=p.adjust(add_p, "fdr"),adjPdom=p.adjust(dom_p, "fdr"))
-	#tsMin   = tsAdj %>% rowwise %>% mutate (minP=min(adjP, adjPadd, adjPdom, na.rm=T)) 
-	#tsArr   = tsMin %>% arrange (minP)
-	#write.table (file=outTassel, tsArr, quote=F, sep="\t", row.names=F)
+	outTassel = sprintf ("out/out-TASSEL-%s.scores", model)
 
 	# Create tree tables for p, pAdd, and pDom
 	results      <- read.table (file=outFile, header=T, sep="\t")
@@ -425,7 +416,7 @@ convertToToolFormats <- function (genotypeFile, phenotypeFile, gwasModel)
 	#gwaspToShesisGenoPheno ("out/filtered-gwasp4-genotype.tbl", "out/filtered-gwasp4-phenotype.tbl") 
 	#gwaspToShesisGenoPheno (genotypeFile, phenotypeFile)
 
-#	if (gwasModel == "Structure") {
+#	if (gwasModel == "Full") {
 #		inGeno   = "out/filtered-plink-genotype"       # Only prefix for Plink
 #
 #		# FIRST: kinship filtering of .ped file
@@ -579,17 +570,17 @@ getConfigurationParameters <- function (configFile)
 	message ("------------------------------------------------")
 	message ("Summary of input parameters:")
 	message ("------------------------------------------------")
-	msg ("Genotype filename  : ", params$genotypeFile) 
-	msg ("Phenotype filename : ", params$phenotypeFile) 
-	msg ("Significance level : ", params$significanceLevel) 
-	msg ("Correction method  : ", params$correctionMethod) 
-	msg ("Trait              : ", params$trait) 
-	msg ("GwAS model         : ", params$gwasModel) 
-	msg ("Filtering          : ", params$filtering) 
-	msg ("MIND               : ", params$MIND) 
-	msg ("GENO               : ", params$GENO) 
-	msg ("MAF                : ", params$MAF) 
-	msg ("HWE                : ", params$HWE) 
+	msg ("Genotype filename      : ", params$genotypeFile) 
+	msg ("Phenotype filename     : ", params$phenotypeFile) 
+	msg ("Significance level     : ", params$significanceLevel) 
+	msg ("Correction method      : ", params$correctionMethod) 
+	msg ("GwAS model             : ", params$gwasModel) 
+	msg ("Number of repored SNPs : ", params$nBest) 
+	msg ("Filtering              : ", params$filtering) 
+	msg ("MIND                   : ", params$MIND) 
+	msg ("GENO                   : ", params$GENO) 
+	msg ("MAF                    : ", params$MAF) 
+	msg ("HWE                    : ", params$HWE) 
 	message ("------------------------------------------------")
 
 	return (params)

@@ -10,7 +10,7 @@
 #options (width=300, stringsAsFactors=F)
 #args = commandArgs(trailingOnly=T)
 library (parallel)
-library (stringi)
+#library (stringi)
 suppressMessages (library (dplyr))
 formatsLogFile="log-formats.log"
 
@@ -268,6 +268,8 @@ ACGTToNumericGenotypeFormat <- function (genotypeFile)
 	newGeno = data.frame (map[,1:3], tM)
 	newName = paste0 (strsplit (genotypeFile, split="[.]")[[1]][1], "-NUM.tbl")
 	write.csv (file=newName, newGeno, quote=F, row.names=F)
+
+	return (newName)
 }
 
 #----------------------------------------------------------

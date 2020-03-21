@@ -1,0 +1,11 @@
+VennDiagram-package     Venn diagram plotting
+calculate.overlap       Calculate Overlap
+draw.pairwise.venn      Draw a Venn Diagram with Two Sets
+draw.quad.venn          Draw a Venn Diagram with Four Sets
+draw.quintuple.venn     Draw a Venn Diagram with Five Sets
+draw.single.venn        Draw a Venn Diagram with a Single Set
+draw.triple.venn        Draw a Venn Diagram with Three Sets
+get.venn.partitions     Get the size of individual partitions in a Venn
+                        diagram
+make.truth.table        Make a truth table
+venn.diagram            Make a Venn Diagram

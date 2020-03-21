@@ -1,0 +1,31 @@
+export(
+	add.title,
+	adjust.venn,
+	decide.special.case,
+	draw.quad.venn,
+	draw.single.venn,
+	draw.pairwise.venn,
+	draw.sp.case,
+	draw.sp.case.preprocess,
+	draw.sp.case.scaled,
+	draw.triple.venn,
+	draw.quintuple.venn,
+	ell2poly,
+	ellipse,
+	find.cat.pos,
+	find.dist,
+	find.intersect,
+	flip.venn,
+	rotate,
+	rotate.sp,
+	rotate.venn.degrees,
+	venn.diagram,
+	calculate.overlap,
+	get.venn.partitions
+	)
+importFrom("grDevices", "dev.off", "png", "svg", "tiff")
+importFrom("stats", "aggregate", "setNames", "phyper")
+importFrom("utils", "capture.output", "combn")
+import(grid,
+      futile.logger
+)
