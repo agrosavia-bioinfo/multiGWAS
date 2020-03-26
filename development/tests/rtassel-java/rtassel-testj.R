@@ -5,34 +5,44 @@ library(rTASSEL)
 
 rTASSEL::startLogger(fullPath = NULL, fileName = NULL)
 
-# Load in hapmap file
-message ("")
-message (">>>>> Genotype")
 geno <- "tassel-geno.vcf"
-tasGenoHMP <- rTASSEL::readGenotypeTableFromPath(path=geno)
-print (tasGenoHMP)
-
-# Load into rTASSEL "GenotypePhenotype" object
-message ("")
-message (">>>>> Phenotype")
 pheno="phenot.tbl"
-tasPheno <- rTASSEL::readPhenotypeFromPath(path=pheno)
-print (tasPheno)
 
-message ("")
-message (">>>> Geno/Pheno")
-tasGenoPheno <- rTASSEL::readGenotypePhenotype(
-	genoPathOrObj = tasGenoHMP,
-    phenoPathDFOrObj = tasPheno
-)
+#----------------------------------------------------------
+#----------------------------------------------------------
+main <- function () {
+	args = commandArgs (trailingOnly=T)
+	geno  = args [1]
+	pheno = args [2]
+	runNaiveTASSEL (geno, pheno)
+}
 
-print (tasGenoPheno)
+#----------------------------------------------------------
+#----------------------------------------------------------
+runNaiveTASSEL <- function (genotype, phenotype) {
+	# Load in hapmap file
+	message (">>>>> Genotype")
+	tasGenoHMP <- rTASSEL::readGenotypeTableFromPath(path=geno)
 
+	# Load into rTASSEL "GenotypePhenotype" object
+	message (">>>>> Phenotype")
+	tasPheno <- rTASSEL::readPhenotypeFromPath(path=pheno)
 
-message ("")
-trait = "tuber_shape"
-message ("Calculating GLM...")
-tasGLM <- rTASSEL::assocModelFitter(tasObj=tasGenoPheno, formula=list(tuber_shape)~., fitMarkers=T, kinship=NULL, fastAssociation=F)
-#
-print (tasGLM)
-write.table (tasGLM$GLM_Stats, file="tasse_glm.scores", quote=F, col.names=T, row.names=F, sep="\t")
+	message (">>>> Geno/Pheno")
+	tasGenoPheno <- rTASSEL::readGenotypePhenotype(
+		genoPathOrObj = tasGenoHMP,
+		phenoPathDFOrObj = tasPheno
+	)
+
+	print (tasGenoPheno)
+
+	message ("Calculating GLM...")
+	tasGLM <- rTASSEL::assocModelFitter(tasObj=tasGenoPheno, formula=.~., fitMarkers=T, kinship=NULL, fastAssociation=F)
+	#
+	print (tasGLM)
+	write.table (tasGLM$GLM_Stats, file="tasse_glm.scores", quote=F, col.names=T, row.names=F, sep="\t")
+}
+
+#----------------------------------------------------------
+#----------------------------------------------------------
+main()

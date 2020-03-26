@@ -24,8 +24,8 @@ library(kableExtra)
 ```
 
 ```{r  echo=FALSE, message=FALSE}
-inputDir     = paste0 (params$workingDir, "/report/")
-nBest  = params$nBest
+inputDir = paste0 (params$workingDir, "/report/")
+nBest    = params$nBest
 ```
 
 ```{r setKnitOptions, include=FALSE}

@@ -1,4 +1,5 @@
 #!/usr/bin/Rscript
+suppressMessages (library (gplots)) 
 #----------------------------------------------------------
 # Main
 #----------------------------------------------------------
@@ -18,7 +19,7 @@ main <- function () {
 createHeatmapForSNPList <- function (outputDir, genoFileACGT, genoFileNUM, phenoFile, snpList) {
 	outName = paste0 (outputDir, "/out-SNPProfile") 
 	for (snp in snpList) {
-		msg ("    >>>> Plotting SNP profile for SNP: ", snp)
+		#msgmsg ("    >>>> Plotting SNP profile for SNP: ", snp)
 		pdf (paste0(outName,"-",snp, ".pdf"), width=7, height=7)
 		createHeatmapForSNP (outputDir, genoFileACGT, genoFileNUM, phenoFile, snp)
 		dev.off()
@@ -65,7 +66,6 @@ createHeatmapForSNP <- function (outputDir, genoFileACGT, genoFileNUM, phenoFile
 	head(genotypeACGT)
 	marker_3
 	z<-data.frame(marker_3)
-	require(gplots)
 	data_geno_num_ACGT<-data.frame(marker_2,marker_3)
 	data_geno_num_ACGT
 	gen_0<-subset(data_geno_num_ACGT,marker_2=="0",select = marker_3)

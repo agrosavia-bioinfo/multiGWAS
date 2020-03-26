@@ -2,12 +2,13 @@
 # AUTHOR : Luis Garreta (lgarreta@agrosavia.co)
 # DATA   : Feb/2020
 # LOG    :
+	# r1.02:  Hidden warnigns qchisq
 	# r1.01:  Removed annotations from functions. Output results to "out/" dir 
 #-------------------------------------------------------------
 #-------------------------------------------------------------
 runGwaspGwas <- function (params) 
 {
-	msg("Running GWASpoly...")
+	msgmsg("Running GWASpoly...")
 
 	genotypeFile  = params$genotypeFile
 	phenotypeFile = params$phenotypeFile
@@ -42,13 +43,13 @@ runGwaspGwas <- function (params)
 #-------------------------------------------------------------
 controlPopulationStratification <- function (data1, gwasModel, data2) 
 {
-	msg();msg("Controlling populations structure...")
+	msgmsg ();msgmsg("Controlling populations structure...")
 
  	# Load data instead calculate it
-	if (!is.null (data2)) {msg (">>>> Loading kinship..."); return (data2) }
+	if (!is.null (data2)) {msgmsg(">>>> Loading kinship..."); return (data2) }
 
 	if (gwasModel=="Naive") {
-		msg ("    >>>> Without any correction") 
+		msgmsg("    >>>> Without any correction") 
 		markers = data1@pheno [,1]
 		n       = length (markers)
 		kinshipMatrix = matrix (diag (n), n, n, dimnames=list (markers, markers))
@@ -56,7 +57,7 @@ controlPopulationStratification <- function (data1, gwasModel, data2)
 		#dataTmp      <- set.K (data1, K=NULL)
 		data2        = new ("GWASpolyStruct", dataTmp)
 	}else if (gwasModel == "Full") {
-		msg ("    >>>> Using default Kinship and PCs=5 ")
+		msgmsg("    >>>> Using default Kinship and PCs=5 ")
 		kinshipMatrix = NULL
 		dataTmp       = set.K (data1)
 		data2         = new ("GWASpolyStruct", dataTmp)
@@ -72,13 +73,13 @@ controlPopulationStratification <- function (data1, gwasModel, data2)
 #-------------------------------------------------------------
 runGwaspoly <- function (data2, gwasModel, snpModels, data3) 
 {
-	if (!is.null (data3)) { msg (">>>> Loading GWASpoly..."); return (data3) }
+	if (!is.null (data3)) { msgmsg(">>>> Loading GWASpoly..."); return (data3) }
 
  	if (gwasModel %in% c("Naive","Kinship")) {
-		msg (">>>> Without params")
+		msgmsg(">>>> Without params")
 		data3 = GWASpoly(data2, models=snpModels, traits=NULL, params=NULL, n.core=4)
 	}else {
-		msg (">>>> With params")
+		msgmsg(">>>> With params")
 		data3 = GWASpoly(data2, models=snpModels, traits=NULL, params=data2@params)
 	}
 	
@@ -90,11 +91,11 @@ runGwaspoly <- function (data2, gwasModel, snpModels, data3)
 #-------------------------------------------------------------
 showResults <- function (data3, testModels, trait, gwasModel, correctionMethod, phenotypeFile, ploidy) 
 {
-	msg();msg ("Writing GWASpoly results...")
+	msgmsg ();msgmsg("Writing GWASpoly results...")
 	outputDir    = "out/"
 	outGWASpoly  = "out-GWASpoly"
 
-	msg (">>>> Plotting results to ", outputDir, "...")
+	msgmsg(">>>> Plotting results to ", outputDir, "...")
 	phenoName = strsplit (phenotypeFile, split=".scores")[[1]][1]
 
 	n = length (testModels)
@@ -124,7 +125,7 @@ showResults <- function (data3, testModels, trait, gwasModel, correctionMethod, 
 	dev.off()
 
 	qtlsFile = sprintf("%s/%s-%s-QTLs.scores", outputDir, outGWASpoly, gwasModel)
-	msg (">>>> Writing QTLs to file: ", qtlsFile, "...")
+	msgmsg(">>>> Writing QTLs to file: ", qtlsFile, "...")
 	#write.GWASpoly (data5, trait, paste0(qtlsFile,".qtls"), "scores", delim="\t")
 
 	outQTLsAllSNPs  = getQTL (data5, gwasModel, ploidy)
@@ -150,7 +151,6 @@ getQTL <- function(data,gwasModel, ploidy, traits=NULL,models=NULL)
 	n.trait <- length(traits)
 	output <- data.frame(NULL)
 	for (j in 1:n.model) {
-		msg (">>>>>>>>>>>>>> ", "Model: ", models [j], "<<<<<<<<<<<<<<<<<<<<")
 		#ix <- which(data@scores[[traits[1]]][,models[j]] > (data@threshold[traits[1],models[j]]) - 1)
 		ix <- which (data@scores[[traits[1]]][,models[j]] != 0)
 		markers <-  data.frame (SNP=data@map[ix,c("Marker")])
@@ -190,9 +190,13 @@ getQTL <- function(data,gwasModel, ploidy, traits=NULL,models=NULL)
 
 #-------------------------------------------------------------
 # Calculate the inflation factor from -log10 values
+# It can fire warning, here they are hidign
 #-------------------------------------------------------------
 calculateInflationFactor <- function (scores)
 {
+	oldw <- getOption("warn")
+	options(warn = -1)
+
 	remove <- which(is.na(scores))
 	if (length(remove)>0) 
 		x <- sort(scores[-remove],decreasing=TRUE)
@@ -202,6 +206,8 @@ calculateInflationFactor <- function (scores)
 	pvalues = 10^-x
 	chisq <- na.omit (qchisq(1-pvalues,1))
 	delta  = round (median(chisq)/qchisq(0.5,1), 3)
+
+	options (warn = oldw)
 
 	return (list(delta=delta, scores=x))
 }
@@ -242,9 +248,9 @@ qqPlot <- function(data,trait,model,cex=1,filename=NULL)
 #-------------------------------------------------------------
 initGWAS <- function (phenotypeFile, genotypeFile, ploidy, format="ACGT", data1) 
 {
-	msg();msg ("Initializing GWAS...");msg()
+	msgmsg ();msgmsg("Initializing GWAS...");msgmsg ()
 	# When data is previously loaded
-	if (!is.null (data)) {msg(">>>> Loading GWAS data..."); return (data)}
+	if (!is.null (data)) {msgmsg(">>>> Loading GWAS data..."); return (data)}
 
 	data1 <- read.GWASpoly (ploidy = ploidy, pheno.file = phenotypeFile, 
 							geno.file = genotypeFile, format = "ACGT", n.traits = 1, delim=",")

@@ -2,13 +2,12 @@
 
 # INFO  : Tool for running GWAS using four GWAS tools: GWASpoly and SHEsis for polyploids species, and Plink and Tassel for diploids.
 # AUTHOR: Luis Garreta (lgarreta@agrosavia.co) 
-# DATA  : 12/feb/2020
+# DATE  : 12/feb/2020
 # LOGS  :   
+	# r0.99: Fixed Tassel Pipeline. Improved messages and warnings"
 	# r0.982: Added local libs inside code. Dynamic markdown in pdf and html. Trait in report
-	# r0.98: Changed "Structure" by "Full"
 	# r0.96: Running Naive/Full for SHEsis and Plink with kinship using plink2
 	# r0.95: Added kinship for SHEsis. Drastic modification to runPlink and runShesis. Modified script plink kinship usink plink2
-	# r0.91: Working with rmarkdown (without QR profile)
 	# r0.9: Full functional, but it needs to be improved: own filtes (HWE), SHEsis Full model, corrections and thresholds (FDR, BONF), Manhattan plots
 
 # Constants
@@ -19,10 +18,12 @@ args = commandArgs(trailingOnly = TRUE)
 #args = c("config-TraitTuberShape-ModelNaive-FiltersTrue-CorrectionBONF.config")
 
 USAGE="USAGE: Rscript gwas-polypiline.R <config file>"
-if (length (args) != 1) {
-	message (USAGE)
-	quit()
-}
+if (length (args) != 1) 
+	stop (USAGE)
+
+if (file.exists (args[1])==F) 
+	stop ("Configuration file not found")
+
 #-------------------------------------------------------------
 # Load required packages
 #-------------------------------------------------------------
@@ -37,6 +38,8 @@ suppressMessages (library (config))  # For read config file
 setClass ("GWASpolyStruct", slots=c(params="list"), contains="GWASpoly.K")
 
 options (width=300)
+# Send warnings and errors to log file
+#sink (file ("log-warnings-errors.log", open="wt"), type="message")
 source (paste0 (HOME, "/sources/gwas-preprocessing.R"))      # Module with functions to convert between different genotype formats 
 source (paste0 (HOME, "/sources/gwas-summary.R"))            # Module with functions to create summaries: tables and venn diagrams
 source (paste0 (HOME, "/sources/gwas-heatmap.R"))            # Module with functions to create summaries: tables and venn diagrams
@@ -51,7 +54,9 @@ data = data1 = data2 = data3 = NULL
 #-------------------------------------------------------------
 main <- function (args) 
 {
+
 	# Read and check config file arguments
+	msg ("Reading configuration file...")
 	configFile       <-  args [1]
 	config           <- getConfigurationParameters (configFile)
 	config$outputDir <- "out/"
@@ -60,9 +65,10 @@ main <- function (args)
 	# Create output dir "out/" and move to it
 	workingDir = initOutputDir (configFile, config$genotypeFile, config$phenotypeFile)
 
-	msg (">>>>>>>>>>>>", config$gwasModel, "<<<<<<<<<<<") 
+	msg ("Running MultiGWAS for ", config$gwasModel, "model...") 
 
 	# Read, filter, and check phenotype and genotype
+	msg ("Preprocessing genomic data (Filtering and Formating data)...")
 	data <- dataPreprocessing (config$genotypeFile, config$phenotypeFile, config)
 	config$genotypeFile  =data$genotypeFile
 	config$phenotypeFile =data$phenotypeFile
@@ -70,25 +76,26 @@ main <- function (args)
 	config$trait = data$trait
 
 	# Run the four tools in parallel
-	#runPlinkGwas (config)
-	#runTasselGwas (config)
-	#runGwaspolyGwas (config)
-	#runShesisGwas (config)
-	mclapply (c("Gwasp", "Plink", "SHEsis", "Tassel"), runGWASTools, config, mc.cores=4)
+	#runGWASTools ("Tassel", config)
+	msg ("Preparing to execute in parallel the four GWAS tools (GWASpoly, SHEsis, PLINK, and TASSEL)...")
+	msgmsg ("Running GWASpoly...");msgmsg ("Running SHEsis...");msgmsg ("Running PLINK...");msgmsg ("Running TASSEL...")
+	mclapply (c("Gwasp", "Plink", "SHEsis", "Tassel"), runGWASTools, config, mc.cores=4, mc.silent=T)
 
 	# Create reports
+	msg ("Creating reports (Table, Venn diagrams, Manhattan&QQ plots, SNP profiles)...")
 	createReports (config$outputDir, config$genotypeFile, config$phenotypeFile, 
 				   config$gwasModel, config$reportDir, nBest=as.integer (config$nBest))
 
 	# Move out files to output dir
+	msg ("Moving files to output folders...")
 	moveOutFiles (config$outputDir, config$reportDir)
 
 	# Call to rmarkdown report
-	msg ("Creating html markdown report...")
+	msg ("Creating html rmarkdown report...")
 	outputFile = paste0 (workingDir, "/multiGWAS-report.html")
 	title      = paste0 ("MultiGWAS report for ", config$gwasModel, " GWAS model")
 	rmarkdown::render (paste0(HOME,"/sources/gwas-markdown.Rmd"), output_file=outputFile, output_format="html_document", 
-					   params=list (workingDir=workingDir, reportTitle=title, nBest=config$nBest))
+					   params=list (workingDir=workingDir, reportTitle=title, nBest=config$nBest), quiet=T)
 }
 #-------------------------------------------------------------
 # Create dir, if it exists, it is renamed as old-XXXX
@@ -96,18 +103,16 @@ main <- function (args)
 #-------------------------------------------------------------
 initOutputDir <- function (configFile, genotypeFile, phenotypeFile) 
 {
-	#outDir   = gsub ("config","test", configFile)
 	outDir   = paste0 ("out-", strsplit (configFile, split="[.]") [[1]][1])
-	msg ("Output dir: ", outDir)
 	createDir (outDir)
-	system (sprintf ("cp %s %s", configFile, outDir))
+	runCommand (sprintf ("cp %s %s", configFile, outDir))
 
 	runCommand (sprintf ("ln -s %s/%s %s/%s", getwd(), genotypeFile, outDir, genotypeFile))
 	runCommand (sprintf ("ln -s %s/%s %s/%s", getwd(), phenotypeFile, outDir, phenotypeFile))
 
 	setwd (outDir)
-	system ("mkdir out")
-	system (sprintf ("cp %s %s", configFile, "out"))
+	runCommand ("mkdir out")
+	runCommand (sprintf ("cp %s %s", configFile, "out"))
 
 	# Copy geno/pheno to "out/" dir 
 	runCommand (sprintf ("cp -a %s %s", genotypeFile, "out/"))
@@ -115,7 +120,6 @@ initOutputDir <- function (configFile, genotypeFile, phenotypeFile)
 
 	workingDir = getwd ()
 	return (workingDir)
-
 }
 
 #-------------------------------------------------------------
@@ -123,13 +127,14 @@ initOutputDir <- function (configFile, genotypeFile, phenotypeFile)
 #-------------------------------------------------------------
 moveOutFiles <- function (outputDir, reportDir) 
 {
-	msg ("Moving output files to output directories...")
-	system (sprintf ("mv %s/out*scores %s", outputDir, reportDir))
-	system (sprintf ("mv %s/out*pdf %s", outputDir, reportDir))
-	system ("mkdir logs")
-	system ("mv *.log* logs")
-	system ("mv *.errors* logs")
-	system ("mv *PCs* logs")
+	runCommand (sprintf ("mv %s/out*scores %s", outputDir, reportDir))
+	runCommand (sprintf ("mv %s/out*pdf %s", outputDir, reportDir))
+	runCommand ("mkdir logs")
+	runCommand ("mv *.log* logs")
+	runCommand ("mv *.errors* logs")
+	system ("mv *PCs* logs", ignore.stdout=T, ignore.stderr=T)
+	system ("mv ../*log* logs")
+	system ("mv ../*errors* logs")
 }
 
 #-------------------------------------------------------------
@@ -152,7 +157,7 @@ runGWASTools <- function (tool, config)
 #-------------------------------------------------------------
 runGwaspolyGwas <- function (params) 
 {
-	msg("Running GWASpoly...")
+	msgmsg("Running GWASpoly...")
 
 	genotypeFile  = params$genotypeFile
 	phenotypeFile = params$phenotypeFile
@@ -174,8 +179,10 @@ runGwaspolyGwas <- function (params)
 
 	# GWAS execution
 	data3 <- runGwaspoly (data2, params$gwasModel, params$snpModels, data3)
+	msgmsg ("    >>>> GWASpoly showResults...")
 	showResults (data3, params$testModels, params$trait, params$gwasModel, 
 				 params$correctionMethod, params$phenotypeFile, ploidy)
+	msgmsg ("    >>>> ...GWASpoly showResults")
 }
 
 #-------------------------------------------------------------
@@ -183,7 +190,7 @@ runGwaspolyGwas <- function (params)
 #-------------------------------------------------------------
 runPlinkGwas <- function (params) 
 {
-	msg ("Running Plink GWAS...")
+	msgmsg ("Running Plink GWAS...")
 	model = params$gwasModel
 
 	inGeno   = "out/filtered-plink-genotype"       # Only prefix for Plink
@@ -237,7 +244,7 @@ runPlinkGwas <- function (params)
 #-------------------------------------------------------------
 runShesisGwas <- function (params) 
 {
-	msg ("Running SHEsis GWAS...")
+	msgmsg ("Running SHEsis GWAS...")
 
 	inGenoPheno  = "out/filtered-shesis-genopheno.tbl"
 	inMarkers    = "out/filtered-shesis-markernames.tbl"
@@ -300,30 +307,27 @@ runShesisGwas <- function (params)
 #-------------------------------------------------------------
 runTasselGwas <- function (params) 
 {
-	msg ("Running Tassel GWAS...")
+	msgmsg ("Running Tassel GWAS...")
 	model = params$gwasModel
 
 	# Parameters for the scripts
-	inGenoPED  = "out/filtered-plink-genotype.ped"
-	inGenoMAP  = "out/filtered-plink-genotype.map"
+	inGenoVCF  = "out/filtered-tassel-genotype.vcf"
 	inPhenoTBL = "out/filtered-tassel-phenotype.tbl"
 	outPrefix  = paste0("out/out-TASSEL-", model)
 
 	if (model=="Naive") {
-		cmm=sprintf ("%s/sources/scripts/script-tassel-NaiveModel.sh %s %s %s %s",
-					 HOME,inGenoPED, inGenoMAP, inPhenoTBL, outPrefix)
+		cmm=sprintf ("%s/sources/scripts/script-tassel-NaiveModel.sh %s %s %s", HOME,inGenoVCF, inPhenoTBL, outPrefix)
 		runCommand (cmm, "log-tassel.log")
 		outFile   = list.files("out/", pattern=sprintf("^(.*(%s).*(1).*(txt)[^$]*)$",model), full.names=T)
 	}else if (model=="Full") {
-		cmm=sprintf ("%s/sources/scripts/script-tassel-FullModel.sh %s %s %s %s",
-					 HOME, inGenoPED, inGenoMAP, inPhenoTBL, outPrefix)
+		cmm=sprintf ("%s/sources/scripts/script-tassel-FullModel.sh %s %s %s", HOME, inGenoVCF, inPhenoTBL, outPrefix)
 		runCommand (cmm, "log-tassel.log")
 		outFile   = list.files("out/", pattern=sprintf("^(.*(%s).*(stats).*(txt)[^$]*)$",model), full.names=T)
 	}else 
 		quit (paste ("Type of GWAS:\"", model, "\", not implemented"))
 	
 	# Rename output file
-	msg ("Tassel output file: ", outFile)
+	msgmsg ("Tassel output file: ", outFile)
 	outTassel = sprintf ("out/out-TASSEL-%s.scores", model)
 
 	# Create tree tables for p, pAdd, and pDom
@@ -363,45 +367,24 @@ runTasselGwas <- function (params)
 #-------------------------------------------------------------
 dataPreprocessing <- function (genotypeFile, phenotypeFile, config) 
 {
-	msg();msg("Data preprocessing...");msg()
-
 	# Filter by common sample names
 	common <- filterByMAFCommonNames (genotypeFile, phenotypeFile)
 	#common = filterByCommonNames (genotypeFile, phenotypeFile)
 	genotypeFile  = common$genotypeFile
 	phenotypeFile = common$phenotypeFile
 
-	if (config$filtering == FALSE) {
-		# check if paths are asigned to geno/pheno vars
-		msg (    "Without filters")
-		runCommand (sprintf ("ln -s %s %s", basename (genotypeFile), "out/filtered-gwasp4-genotype.tbl"))
-		runCommand (sprintf ("ln -s %s %s", basename (phenotypeFile), "out/filtered-gwasp4-phenotype.tbl"))
-
-		# Create plink files
-		plinkFile  = paste0 ("out/", strsplit (basename(genotypeFile), split="[.]")[[1]][1], "-plink")
-		createPlinkMapFromGwaspolyGenotype (genotypeFile, plinkFile )
-		createPlinkPedFromGwaspolyGenotype (genotypeFile, plinkFile)
-
-		# Recode to plink format adjusted for tassel and plink
-		cmm = sprintf ("plink --file %s --recode tab --out %s", plinkFile, plinkFile)
-		runCommand (cmm, "log-filtering.log")
-
-		# Copy links of filtered plink files to main dir
-		runCommand (sprintf ("ln -s %s.ped out/filtered-plink-genotype.ped", basename (plinkFile)), "log-filtering.log")
-		runCommand (sprintf ("ln -s %s.map out/filtered-plink-genotype.map", basename (plinkFile)), "log-filtering.log")
-	}
-	else {
-		msg (    "With filters")
+	if (config$filtering == TRUE) {
+		msgmsg ("Using filters")
 		# Apply filters to genotype (markers and samples) by calling external program
 		filtered = filterByQCFilters (common$genotypeFile, common$phenotypeFile, config)
 		genotypeFile  = filtered$genotypeFile
 		phenotypeFile = filtered$phenotypeFile
 	}
 
-	msg  (">>>> Evaluating trait ", common$trait)
+	msgmsg  ("Evaluating trait ", common$trait)
 
 	# Convert geno/pheno to specific tool formats
-	msg ("Converting and writing plink pheno filtered to other tools formats...")
+	msgmsg ("Converting and writing plink pheno filtered to other tools formats...")
 	convertToToolFormats (genotypeFile, phenotypeFile, config$gwasModel)
 
 	return (list (genotypeFile=genotypeFile, phenotypeFile=phenotypeFile, trait=common$trait))
@@ -409,39 +392,33 @@ dataPreprocessing <- function (genotypeFile, phenotypeFile, config)
 #-------------------------------------------------------------
 # Convert geno/pheno to the specific formats of the GWAS tools
 #-------------------------------------------------------------
-convertToToolFormats <- function (genotypeFile, phenotypeFile, gwasModel) 
+convertToToolFormats <- function (genotypeFile, phenotypeFile, filteringFlag) 
 {
+	# if no filters, only links original .tbl as filtered .tbl
+	if (filteringFlag==FALSE) {
+		msgmsg (    "Without filters")
+		runCommand (sprintf ("ln -s %s %s", basename (genotypeFile), "out/filtered-gwasp4-genotype.tbl"))
+		runCommand (sprintf ("ln -s %s %s", basename (phenotypeFile), "out/filtered-gwasp4-phenotype.tbl"))
+
+		# Create plink files
+		plinkFile  = paste0 ("out/", strsplit (basename(genotypeFile), split="[.]")[[1]][1], "-plink")
+		gwaspToPlinkFormat (genotypeFile, plinkFile)
+
+		# binary to text: recode to plink format adjusted for tassel and plink
+		cmm = sprintf ("plink --file %s --recode tab --out %s", plinkFile, plinkFile)
+		runCommand (cmm, "log-filtering.log")
+
+		# Copy links of filtered plink files to main dir
+		runCommand (sprintf ("ln -s %s.ped out/filtered-plink-genotype.ped", basename (plinkFile)), "log-filtering.log")
+		runCommand (sprintf ("ln -s %s.map out/filtered-plink-genotype.map", basename (plinkFile)), "log-filtering.log")
+	}
+
+	# Convert phenotype for plink and TASSEL and create VCF file for TASSEL
 	gwasp2plinkPhenotype  (phenotypeFile,"out/filtered-plink-phenotype.tbl") 
-	gwasp2tasselPhenotype (phenotypeFile,"out/filtered-tassel-phenotype.tbl") 
-	#gwaspToShesisGenoPheno ("out/filtered-gwasp4-genotype.tbl", "out/filtered-gwasp4-phenotype.tbl") 
-	#gwaspToShesisGenoPheno (genotypeFile, phenotypeFile)
-
-#	if (gwasModel == "Full") {
-#		inGeno   = "out/filtered-plink-genotype"       # Only prefix for Plink
-#
-#		# FIRST: kinship filtering of .ped file
-#		cmm=sprintf ("%s/sources/scripts/script-kinship-plink2.sh %s", HOME, inGeno)
-#		runCommand (cmm, "log-kinship.log")
-#
-#		# SHEsis: Filter geno/pheno to individuals, write out, and convert to SHEsis format
-#		kinshipIndividuals  = read.table (file="out/filtered-plink-genotype-kinship.ped", sep="\t")
-#		individuals = as.character (kinshipIndividuals [,1])
-#
-#		genotype         = read.csv (file=genotypeFile, header=T)
-#		newCols = c(colnames (genotype)[1:3], individuals)
-#		hd (newCols)
-#		phenotype        = read.csv (file=phenotypeFile, header=T)
-#		genotypeKinship  = genotype [, newCols]
-#		phenotypeKinship = phenotype [phenotype [,1] %in% individuals,]
-#		genotypeFileKinship  = addLabel (genotypeFile,  "kinship")
-#		phenotypeFileKinship = addLabel (phenotypeFile, "kinship")
-#		write.table (file=genotypeFileKinship,  genotypeKinship,  row.names=F, quote=F, sep=",")
-#		write.table (file=phenotypeFileKinship, phenotypeKinship, row.names=F, quote=F, sep=",")
-#
-#		gwaspToShesisGenoPheno (genotypeFileKinship, phenotypeFileKinship)
-#	}
-
+	gwaspToTasselPhenotype (phenotypeFile,"out/filtered-tassel-phenotype.tbl") 
+	plinkToVCFFormat ("out/filtered-plink-genotype", "out/filtered-tassel-genotype")
 }
+
 #-------------------------------------------------------------
 # Filter by common sample names
 #-------------------------------------------------------------
@@ -475,14 +452,13 @@ filterByCommonNames <- function (genotypeFile, phenotypeFile)
 filterByQCFilters <- function (genotypeFile, phenotypeFile, config) 
 {
 	# Format convertion from gwasp4 to plink2
-	msg();msg ("Converting gwaspoly to plink formats...")
+	#msgmsg ("Converting gwaspoly to plink formats...")
 	plinkFile  = paste0 ("out/", strsplit (basename(genotypeFile), split="[.]")[[1]][1], "-plink")
-	createPlinkMapFromGwaspolyGenotype (genotypeFile, plinkFile)
-	createPlinkPedFromGwaspolyGenotype (genotypeFile, plinkFile )
+	gwaspToPlinkFormat (genotypeFile, plinkFile)
 
 	cmm = paste ("plink --file", plinkFile, "--make-bed", "--out", paste0(plinkFile,"-QC"))
 	if (config$filtering==T) {
-		msg ("    >>>> Filtering by missingness, MAF, and HWE")
+		msgmsg ("Filtering by missingness, MAF, and HWE")
 		# Filter missingness per sample (MIND)"
 		if (!is.null(config$MIND)) cmm=paste (cmm, paste ("--mind", config$MIND))
 		# Filter missingness per SNP    (GENO)
@@ -499,7 +475,7 @@ filterByQCFilters <- function (genotypeFile, phenotypeFile, config)
 	runCommand (cmm, "log-filtering.log")
 
 #	# Check for linkage disequilibrium
-#	msg ("    >>>> Checking form linkage disequilibrium...")
+#	msgmsg ("    >>>> Checking form linkage disequilibrium...")
 #	cmm = sprintf ("plink --bfile %s-QC --indep-pairwise 50 10 0.9 --out %s-LD", plinkFile, plinkFile)
 #	runCommand (cmm, "log-filtering.log")
 #	cmm = sprintf ("plink --bfile %s-QC --exclude %s-LD.prune.out --make-bed --out %s-LDB", plinkFile, plinkFile, plinkFile)
@@ -511,26 +487,23 @@ filterByQCFilters <- function (genotypeFile, phenotypeFile, config)
 	runCommand (sprintf ("ln -s %s-QC.ped out/filtered-plink-genotype.ped", basename (plinkFile)), "log-filtering.log")
 	runCommand (sprintf ("ln -s %s-QC.map out/filtered-plink-genotype.map", basename (plinkFile)), "log-filtering.log")
 
-
 	# Get final markers and individuals"
-	msg ("Writting filtered markers and individuals...")
+	msgmsg ("Writting filtered markers and individuals...")
 	filteredSamples <- as.character (read.table ("out/filtered-plink-genotype.ped")[,2])
 	filteredMarkers <- as.character (read.table ("out/filtered-plink-genotype.map")[,2])
 
-	# Filter phenotype
-	#phenoAll = read.csv (phenotypeFile, header=T, check.names=F)
+	# Filter phenotype (.tbl) with pheno names from QC filters 
 	phenoAll = read.csv (phenotypeFile, header=T)
 	rownames (phenoAll) = phenoAll [,1]
 	phenoFiltered  = phenoAll [filteredSamples,]
 	trait  <- colnames (phenoAll)[2]
 
-	# Filter genotype
-	#genoAll  = read.csv (genotypeFile, header=T, check.names=F)
+	# Filter genotype (.tbl) with geno names from QC filters 
 	genoAll  = read.csv (genotypeFile, header=T)
 	rownames (genoAll) = genoAll [,1]
 	genoFiltered <- genoAll [filteredMarkers,]
 
-	msg("Writting geno/pheno filtered by MAF, Missing, HWE...")
+	msgmsg("Writting geno/pheno filtered by MAF, Missing, HWE...")
 	outGenoFile  <- "out/filtered-gwasp4-genotype.tbl"
 	outPhenoFile <- "out/filtered-gwasp4-phenotype.tbl"
 
@@ -540,48 +513,28 @@ filterByQCFilters <- function (genotypeFile, phenotypeFile, config)
 	return (list (genotypeFile=outGenoFile, phenotypeFile=outPhenoFile, trait=trait))
 }
 
-##-------------------------------------------------------------
-## Calculate the inflation factor from -log10 values
-##-------------------------------------------------------------
-#calculateInflationFactor <- function (scores)
-#{
-#	remove <- which(is.na(scores))
-#	if (length(remove)>0) 
-#		x <- sort(scores[-remove],decreasing=TRUE)
-#	else 
-#		x <- sort(scores,decreasing=TRUE)
-#
-#	pvalues = 10^-x
-#	chisq <- na.omit (qchisq(1-pvalues,1))
-#	delta  = round (median(chisq)/qchisq(0.5,1), 3)
-#
-#	return (list(delta=delta, scores=x))
-#}
-
 #-------------------------------------------------------------
 # Get params from config file and define models according to ploidy
 #-------------------------------------------------------------
 getConfigurationParameters <- function (configFile) 
 {
-	msg("Reading config file...")
-
 	params = config::get (file=configFile) 
 
-	message ("------------------------------------------------")
-	message ("Summary of input parameters:")
-	message ("------------------------------------------------")
-	msg ("Genotype filename      : ", params$genotypeFile) 
-	msg ("Phenotype filename     : ", params$phenotypeFile) 
-	msg ("Significance level     : ", params$significanceLevel) 
-	msg ("Correction method      : ", params$correctionMethod) 
-	msg ("GwAS model             : ", params$gwasModel) 
-	msg ("Number of repored SNPs : ", params$nBest) 
-	msg ("Filtering              : ", params$filtering) 
-	msg ("MIND                   : ", params$MIND) 
-	msg ("GENO                   : ", params$GENO) 
-	msg ("MAF                    : ", params$MAF) 
-	msg ("HWE                    : ", params$HWE) 
-	message ("------------------------------------------------")
+	msgmsg ("------------------------------------------------")
+	msgmsg ("Summary of input parameters:")
+	msgmsg ("------------------------------------------------")
+	msgmsg ("Genotype filename      : ", params$genotypeFile) 
+	msgmsg ("Phenotype filename     : ", params$phenotypeFile) 
+	msgmsg ("Significance level     : ", params$significanceLevel) 
+	msgmsg ("Correction method      : ", params$correctionMethod) 
+	msgmsg ("GwAS model             : ", params$gwasModel) 
+	msgmsg ("Number of repored SNPs : ", params$nBest) 
+	msgmsg ("Filtering              : ", params$filtering) 
+	msgmsg ("MIND                   : ", params$MIND) 
+	msgmsg ("GENO                   : ", params$GENO) 
+	msgmsg ("MAF                    : ", params$MAF) 
+	msgmsg ("HWE                    : ", params$HWE) 
+	msgmsg ("------------------------------------------------")
 
 	return (params)
 }
@@ -683,13 +636,13 @@ filterByMAFCommonNames <- function(geno.file, pheno.file, thresholdMAF=0.0){
 	ploidy    = 4
 	bases     = c("A","C","G","T")
 	
-	msg ("Reading genotype and phenotype....")
+	msgmsg ("Reading genotype and phenotype....")
 	geno      <- read.table(file=geno.file,header=T,as.is=T,check.names=T,sep=delim)
 	gid.geno  <- colnames(geno)[-(1:3)]
 	pheno     <- read.table(file=pheno.file,header=T,as.is=T,check.names=T,sep=delim)
 	gid.pheno <- unique(pheno[,1])
 
-	msg ("Removing duplicated markers")
+	msgmsg ("Removing duplicated markers")
 	geno <- geno [!duplicated (geno[,1]),]  ### remove duplicates from geno
 
 	map     <- data.frame(Marker=geno[,1],Chrom=factor(geno[,2],ordered=T),Position=geno[,3],stringsAsFactors=F)
@@ -701,19 +654,19 @@ filterByMAFCommonNames <- function(geno.file, pheno.file, thresholdMAF=0.0){
 	map$Ref <- tmp[1,]
 	map$Alt <- tmp[2,]
 
-	msg ("Calculating numeric genotype matrix...")
+	msgmsg ("Calculating numeric genotype matrix...")
 	M <- apply(cbind(map$Ref,markers),1,function(x){
 		y <- gregexpr(pattern=x[1],text=x[-1],fixed=T)  
 		ans <- as.integer(lapply(y,function(z){ifelse(z[1]<0,ploidy,ploidy-length(z))}))	
 		return(ans)
 	})
 
-	msg ("Checking invalid marker calls...")
+	msgmsg ("Checking invalid marker calls...")
 	rownames(M) <- gid.geno
 	bad <- length(which(!is.element(na.omit(M),0:ploidy)))
 	if (bad > 0) {stop("Invalid marker calls.")}
 	
-	msg ("Checking minor allele frecuency, MAF=", thresholdMAF)
+	msgmsg ("Checking minor allele frecuency, MAF=", thresholdMAF)
 	MAF <- apply(M,2,function(x){AF <- mean(x,na.rm=T)/ploidy;MAF <- ifelse(AF > 0.5,1-AF,AF)})
 	polymorphic <- which(MAF>thresholdMAF)
 
@@ -722,21 +675,21 @@ filterByMAFCommonNames <- function(geno.file, pheno.file, thresholdMAF=0.0){
 	map <- map[order(map$Chrom,map$Position),]
 	M <- M[,map$Marker]
 	m <- nrow(map)
-	msg("Number of polymorphic markers:",m,"\n")
+	msgmsg("Number of polymorphic markers:",m,"\n")
 	
 	missing <- which(is.na(M))
 	if (length(missing)>0) {
-		msg("Missing marker data imputed with population mode...")
+		msgmsg("Missing marker data imputed with population mode...")
 		M <- apply(M,2,impute.mode)
 	}
 	
-	msg("Matching genotypic and phenotypic data...")
+	msgmsg("Matching genotypic and phenotypic data...")
 	gid <- intersect(gid.pheno, gid.geno)
 	pheno <- pheno[is.element(pheno[,1],gid),]
 	rownames (pheno) = pheno [,1]
 	M <- M[gid,]
 	N <- length(gid)
-	msg ("N =",N,"individuals with phenotypic and genotypic information \n")
+	msgmsg ("N =",N,"individuals with phenotypic and genotypic information \n")
 	
 	n.fixed <- ncol(pheno) - n.traits - 1
 	if (n.fixed > 0) {
@@ -749,10 +702,10 @@ filterByMAFCommonNames <- function(geno.file, pheno.file, thresholdMAF=0.0){
 		fixed <- data.frame(NULL)
 	}
 	trait <- colnames(pheno)[-1]
-	msg("Evaluating following trait: ", trait) 
+	msgmsg("Evaluating following trait: ", trait) 
 	
 
-	msg ("Writing geno/pheno filtered by MAF, duplicated, common names")
+	#msgmsg ("Writing geno/pheno filtered by MAF, duplicated, common names")
 	rownames (geno) = geno [,1]
 	genoCommon      = geno [colnames(M),c(colnames(geno)[1:3], pheno[,1])]
 	phenoCommon     = pheno 
@@ -796,15 +749,23 @@ old_addLabel <- function (filename, label)  {
 msg <- function (...) 
 {
   messages = unlist (list (...))
-  cat (">>>>", messages, "\n")
+  cat ("\n>>>>", messages, "\n")
 }
+
+msgmsg <- function (...) 
+{
+  messages = unlist (list (...))
+  cat ("\t>>>>", messages, "\n")
+}
+
+
 
 #----------------------------------------------------------
 # Util to print head of data
 # Fast head, for debug only
 #----------------------------------------------------------
 hd <- function (data, m=10,n=10) {
-	msg (deparse (substitute (data)),":")
+	msgmsg (deparse (substitute (data)),":")
 	if (is.null (dim (data)))
 		print (data [1:10])
 	else if (ncol (data) < 10) 
@@ -827,7 +788,6 @@ createDir <- function (newDir) {
 			if (dir.exists (oldDir) == T) {
 				checkOldDir (oldDir)
 			}
-
 			file.rename (newDir, oldDir)
 		}
 	}
@@ -845,8 +805,7 @@ runCommand <- function (command, logFile="gwas.log")
 		msg (">>>> ", command)
 		system (command)
 	}else {
-		msg ("<<<< ", command)
-		#msg (">>>> ", command)
+		#msgmsg (">>>> ", command)
 		errorsLog = paste0 (strsplit(logFile, split="[.]")[[1]], ".errors")
 		system (paste0 (command, " > ", logFile," 2> ",errorsLog))
 	}

@@ -9,24 +9,75 @@
 
 #options (width=300, stringsAsFactors=F)
 #args = commandArgs(trailingOnly=T)
-library (parallel)
-#library (stringi)
+suppressMessages (library (parallel))
 suppressMessages (library (dplyr))
 formatsLogFile="log-formats.log"
+
+#------------------------------------------------------------------------------
+# Convert genotye from plink (.ped, .map) to VCF (Variant Call Format)
+#------------------------------------------------------------------------------
+plinkToVCFFormat <- function (plinkFile, outFile) {
+	#plinkPrefix = strsplit (plinkFile, split="[.]")[[1]][1]
+	cmm = sprintf ("plink --file %s --recode vcf-fid --out %s", plinkFile, outFile)
+	runCommand (cmm)
+}
+
+#------------------------------------------------------------------------------
+## Format and write gwasp to tassel phenotype (For rtassel)
+#------------------------------------------------------------------------------
+gwaspToTasselPhenotype<- function (gwaspPhenotypeFile, outFilename="") 
+{
+	gwaspPhenotype = read.csv (file=gwaspPhenotypeFile, header=T, check.names=F, )
+	taxa           = as.character (gwaspPhenotype [,1])
+	trait          = gwaspPhenotype [,2]
+	traitName      = colnames (gwaspPhenotype)[2]
+	tasselPheno    = cbind (taxa, trait)
+
+	colnames (tasselPheno) = c ("<Trait>", traitName)
+
+	#msgmsg ("    >>>> Writing gwasp to tassel phenotype...")
+	if (outFilename=="")
+		outFilename = paste0 (strsplit ("out/",gwaspPhenotypeFile, split="[.]")[[1]][1], "-tassel.tbl")
+
+	write.table (file=outFilename, tasselPheno, col.names=T, row.names=F, quote=F, sep="\t")
+}
+
+##------------------------------------------------------------------------------
+### Format and write gwasp to tassel phenotype (For pipeline)
+##------------------------------------------------------------------------------
+#gwasp2tasselPhenotype<- function (gwaspPhenotypeFile, outFilename="") 
+#{
+#	gwaspPhenotype <- read.csv (file=gwaspPhenotypeFile, header=T, check.names=F)
+#	Taxa <- as.character (gwaspPhenotype [,1])
+#	TRAIT <- gwaspPhenotype [,2]
+#	tasselPheno <- cbind (Taxa, TRAIT)
+#
+#	msgmsg ("    >>>> Writing gwasp to tassel phenotype...")
+#	if (outFilename=="")
+#		outFilename = paste0 (strsplit ("out/",gwaspPhenotypeFile, split="[.]")[[1]][1], "-tassel.tbl")
+#
+#	sink (outFilename)
+#	cat ("<Phenotype>\n")
+#	cat ("taxa\tdata\n")
+#	write.table (file="", tasselPheno, col.names=T, row.names=F, quote=F, sep="\t")
+#	sink()
+#}
+
+
 
 #------------------------------------------------------------------------------
 ## Format gwaspoly phenotype to plink format
 #------------------------------------------------------------------------------
 gwasp2plinkPhenotype <- function (gwaspPhenoFile, outFile="") 
 {
-	msg ("    >>>> Creating plink phenotype...")
+	#msgmsg ("    >>>> Creating plink phenotype...")
 	phenotype = read.csv (file=gwaspPhenoFile, header=T, check.names=F)
 	idNames = as.character (phenotype [,1])
 
 	samples = phenotype [,1]
 	traits  = phenotype [,2]
 
-	msg ("    >>>> Writing plink phenotype...")
+	#msgmsg ("    >>>> Writing plink phenotype...")
 	plinkPheno = data.frame (FID=samples,IID=samples, TRAIT= traits)
 	if (outFile=="")
 		outFile = paste0 ("out/",strsplit (gwaspPhenoFile, split="[.]")[[1]][1], "-plink.tbl")
@@ -34,32 +85,12 @@ gwasp2plinkPhenotype <- function (gwaspPhenoFile, outFile="")
 }
 
 #------------------------------------------------------------------------------
-## Format and write gwasp to tassel phenotype
-#------------------------------------------------------------------------------
-gwasp2tasselPhenotype<- function (gwaspPhenotypeFile, outFilename="") 
-{
-	gwaspPhenotype <- read.csv (file=gwaspPhenotypeFile, header=T, check.names=F)
-	Taxa <- as.character (gwaspPhenotype [,1])
-	TRAIT <- gwaspPhenotype [,2]
-	tasselPheno <- cbind (Taxa, TRAIT)
-
-	msg ("    >>>> Writing gwasp to tassel phenotype...")
-	if (outFilename=="")
-		outFilename = paste0 (strsplit ("out/",gwaspPhenotypeFile, split="[.]")[[1]][1], "-tassel.tbl")
-
-	sink (outFilename)
-	cat ("<Phenotype>\n")
-	cat ("taxa\tdata\n")
-	write.table (file="", tasselPheno, col.names=T, row.names=F, quote=F, sep="\t")
-	sink()
-}
-
-#------------------------------------------------------------------------------
 # Gwasp to plink format (.ped .map)
 #------------------------------------------------------------------------------
-gwaspToPlinkFormat <- function (genotypeFile) {
-	markersIdsMap = createPlinkMapFromGwaspolyGenotype (genotypeFile)
-	plinkFile     = createPlinkPedFromGwaspolyGenotype (genotypeFile, markersIdsMap)
+gwaspToPlinkFormat <- function (genotypeFile, plinkFile) {
+	markersIdsMap = createPlinkMapFromGwaspolyGenotype (genotypeFile, plinkFile)
+	plinkFile     = createPlinkPedFromGwaspolyGenotype (genotypeFile, plinkFile)
+	#plinkFile     = createPlinkPedFromGwaspolyGenotype (genotypeFile, markersIdsMap)
 	return (plinkFile)
 
 }
@@ -83,7 +114,7 @@ get.ref <- function(x)
 #------------------------------------------------------------------------------
 createPlinkMapFromGwaspolyGenotype <- function (gwaspGenoFile, plinkFile) 
 {
-	msg ("    >>>> Creating plink MAP file from ", gwaspGenoFile)
+	#msgmsg ("    >>>> Creating plink MAP file from ", gwaspGenoFile)
 	genotype    <- read.table (file=gwaspGenoFile, header=T,stringsAsFactors=T,sep=",", check.names=F)
 	map <- genotype [,-(1:3)]
 	markers     <- as.character(genotype [,1])
@@ -105,28 +136,28 @@ createPlinkMapFromGwaspolyGenotype <- function (gwaspGenoFile, plinkFile)
 createPlinkPedFromGwaspolyGenotype <- function (gwaspGenoFile, plinkFile) 
 {
 	if (file.exists (paste0(plinkFile,".ped"))) {
-		msg ("    >>>> Loading plink file...")
+		msgmsg ("    >>>> Loading plink file...")
 		return (plinkFile)
 	}else {
-		msg ("    >>>> Creating plink PED file...")
+		# ("    >>>> Creating plink PED file...")
 		genotype   <- read.csv (file=gwaspGenoFile, header=T, check.names=F)
 		alleles    <- as.matrix (genotype [,-c(1,2,3)])
 		rownames (alleles) <- genotype [,1]
 
-		msg ("    >>>> Creating transposed genotype...")
+		# ("    >>>> Creating transposed genotype...")
 		samplesIds        <- colnames (alleles)
 
-		msg ("    >>>> Getting Ref/Alt Alleles...")
+		# ("    >>>> Getting Ref/Alt Alleles...")
 		refAltAlleles <- apply(alleles,1,get.ref)
 
-		msg ("    >>>> Converting tetra to diplo")
+		# ("    >>>> Converting tetra to diplo")
 		allelesDiplo  <- tetraToDiplos (genotype[,-c(2,3)], refAltAlleles)
 
 		# Adjust for plink PED file
 		allelesPlink <- t(allelesDiplo)
 		genoPED    <- cbind (samplesIds, samplesIds, 0,0,0,-9, allelesPlink)
 
-		msg ("    >>>> Writing plink diplo PED file to ", plinkFile)
+		# ("    >>>> Writing plink diplo PED file to ", plinkFile)
 		write.table (file= paste0 (plinkFile, ".ped"), genoPED, col.names=F, row.names=F, quote=F, sep="\t")
 	}
 	
@@ -145,15 +176,15 @@ gwaspTetraToDiploGenotype <- function (genotypeFile)
 	markersIds        <- genotype [,1] 
 	samplesIds        <- colnames (alleles)
 
-	msg ("    >>>> Getting Ref/Alt Alleles...")
+	#msgmsg ("    >>>> Getting Ref/Alt Alleles...")
 	refAltAlleles <- apply(alleles,1,get.ref)
 
-	msg ("    >>>> Converting tetra to diplo")
+	##msgmsg ("    >>>> Converting tetra to diplo")
 	diplosMat  <- tetraToDiplos (genotype[,-c(2,3)], refAltAlleles)
 	rownames (diplosMat) = markersIds
 	colnames (diplosMat) = samplesIds
 
-	msg ("    >>>> Writing diplo genotype...")
+	#msgmsg ("    >>>> Writing diplo genotype...")
 	genotypeDiplo = data.frame (map, diplosMat, check.names=F)
 	outName = addLabel (genotypeFile, "diplo")
 	write.csv (file=outName, genotypeDiplo, row.names=F, quote=F)
@@ -174,7 +205,7 @@ impute.mode <- function(x) {
 #----------------------------------------------------------
 gwaspToShesisGenoPheno <- function (genotypeFile, phenotypeFile) 
 {
-	msg ("    >>>> Writting gwasp to shesis genopheno...")
+	msgmsg ("    >>>> Writting gwasp to shesis genopheno...")
 	sep <- function (allele) {
 		s="";
 		for (i in 1:4) s=paste0(s, substr (allele,start=i,stop=i)," ");
@@ -197,11 +228,11 @@ gwaspToShesisGenoPheno <- function (genotypeFile, phenotypeFile)
 	pheno [,2]      = impute.mode (pheno [,2])
 	genoPhenoShesis = data.frame (Sample=pheno[,1], Trait=pheno[,2],  allelesMat)
 
-	msg ("    >>>> Writing shesis genopheno...")
+	msgmsg ("    >>>> Writing shesis genopheno...")
 	outFile = "out/filtered-shesis-genopheno.tbl"
 	write.table (file=outFile, genoPhenoShesis, quote=F,row.names=F,col.names=F, sep="\t")
 
-	msg ("    >>>> Writing shesis marker names...")
+	msgmsg ("    >>>> Writing shesis marker names...")
 	outFile = "out/filtered-shesis-markernames.tbl"
 	write.table (file=outFile, map[,1], quote=F,row.names=F,col.names=F, sep="\t")
 	outFile = "out/filtered-shesis-markernamespos.tbl"
@@ -215,11 +246,11 @@ tetraToDiplos <- function (allelesMat, refAltAlleles)
 {
 	alls <- allelesMat
 	if (file.exists ("tmp-diplosMatrix.tbl")) {
-		msg ("    >>>> Loading diplos matrix...")
+		msgmsg ("    >>>> Loading diplos matrix...")
 		diplosMat = as.matrix (read.table ("tmp-diplosMatrix.tbl", check.names=F, check.names=F))
 	}
 	else {
-		msg ("    >>>> Calculating diplos matrix...")
+		#msgmsg ("    >>>> Calculating diplos matrix...")
 		refs <- refAltAlleles [1,]
 		alts <- refAltAlleles [2,]
 		
@@ -255,7 +286,6 @@ ACGTToNumericGenotypeFormat <- function (genotypeFile)
 	map$Ref <- tmp[1,]
 	map$Alt <- tmp[2,]
 
-	message ("Converting ACGT to numeric...")
 	M <- apply(cbind(map$Ref,markers),1,function(x){
 		y <- gregexpr(pattern=x[1],text=x[-1],fixed=T)  
 		ans <- as.integer(lapply(y,function(z){ifelse(z[1]<0,ploidy,ploidy-length(z))}))	
@@ -287,7 +317,7 @@ numericToACGTFormatGenotype <- function (genotypeFile, SNPsFile)
 	genoACGT     = data.frame (genotype [,1:3], allelesACGT [,-1])
 
 	outFile = paste0 (strsplit (genotypeFile, split="[.]")[[1]][1],"-ACGT.tbl")
-	message (">>> Writing ACGT genotype to ", outFile, "...")
+	#msgmsg ("Writing ACGT genotype to ", outFile, "...")
 	write.table (file=outFile, genoACGT, quote=F,row.names=F, sep=",")
 }
 
@@ -319,7 +349,7 @@ numericToACGTFormatAlleles <- function (alleles, SNPs)
 	return (newAlleles)
 }
 
-#-------------------------------------------------------------
+##-------------------------------------------------------------
 # Convert gwaspoly genotye from numeric tetra to numeric diplo
 #-------------------------------------------------------------
 numericTetraToNumericDiploGenotype <- function (genotypeFile) {
@@ -395,9 +425,24 @@ msg <- function (...)
 }
 
 #-------------------------------------------------------------
+# Run a command string using system function and writes output to log file
+#-------------------------------------------------------------
+runCommand <- function (command, logFile="gwas.log", DEBUG=F) 
+{
+	if (DEBUG==T) {
+		msgmsg (">>>> ", command)
+		system (command)
+	}else {
+		#msgmsg (">>>> ", command)
+		errorsLog = paste0 (strsplit(logFile, split="[.]")[[1]], ".errors")
+		system (paste0 (command, " > ", logFile," 2> ",errorsLog))
+	}
+}
+
+#-------------------------------------------------------------
 #-------------------------------------------------------------
 runCommand <- function (command, logFile="") {
-	msg (">>>> ", command)
+	msgmsg (">>>> ", command)
 	if (logFile != "")
 		system (paste0 (command, " > ", logFile))
 	else
@@ -405,7 +450,7 @@ runCommand <- function (command, logFile="") {
 }
 
 hd <- function (data, m=10,n=10) {
-	msg (deparse (substitute (data)),":")
+	msgmsg (deparse (substitute (data)),":")
 	if (is.null (dim (data)))
 		print (data [1:10])
 	else if (ncol (data) < 5) 
@@ -421,11 +466,17 @@ hd <- function (data, m=10,n=10) {
 #----------------------------------------------------------
 main <- function () 
 {
-	args = c ("filtered-gwaspoly-genotype.tbl")
+	args = c ("filtered-gwasp4-phenotype.tbl", "filtered-plink-genotype.ped")
 
-	genotypeFile  = args [1]
+	pheno  = args [1]
+	geno   = args [2]
 
-	ACGTToNumericGenotypeFormat (genotypeFile)
+	gwaspToTasselPhenotype (pheno, "filt-tassel-pheno.tbl")
+	plinkToVCFFormat (geno, "filt-tassel-geno")
+
 }
+#----------------------------------------------------------
+#----------------------------------------------------------
+#main ()
 
 

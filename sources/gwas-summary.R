@@ -29,7 +29,7 @@ options (bitmapType="cairo", width=300)
 #-------------------------------------------------------------
 main <- function () {
 
-	msg ("Main...")
+	msgmsg ("Main...")
 
 	inputDir    = "out/"
 	outputDir   = "report/"
@@ -50,24 +50,24 @@ main <- function () {
 #-------------------------------------------------------------
 createReports <- function (inputDir, genotypeFile, phenotypeFile, gwasModel, outputDir, nBest=7) 
 {
-	msg ("Creating reports for ", gwasModel, "...")
+	msgmsg ("Creating reports for ", gwasModel, " model...")
 	createDir (outputDir)
 
-	msg ("Writing table input config parameters...")
+	msgmsg ("Writing table input config parameters...")
 	writeConfigurationParameters (inputDir, outputDir)
 
-	msg ("Writing table with summary results...")
+	msgmsg ("Writing table with summary results...")
 	snpTables = markersSummaryTable (inputDir, gwasModel, outputDir,  nBest)
 
-	msg ("Writing table with ", nBest, " best ranked SNPs Table...")
+	msgmsg ("Writing table with ", nBest, " best ranked SNPs Table...")
 	outName = paste0(outputDir, "/out-multiGWAS-scoresTable-best.scores")
 	write.table (file=outName, snpTables$best, row.names=F,quote=F, sep="\t")
 
-	msg ("Writing table with significative SNPs...")
+	msgmsg ("Writing table with significative SNPs...")
 	outName = paste0(outputDir, "/out-multiGWAS-scoresTable-significatives.scores")
 	write.table (file=outName, snpTables$significatives, row.names=F,quote=F, sep="\t")
 
-	msg ("Writing Venn diagram with best SNPs...")
+	msgmsg ("Writing Venn diagram with best SNPs...")
 	png (paste0 (outputDir,"/out-multiGWAS-vennDiagram-best.png"), res=72)
 	commonBest = markersVennDiagrams (snpTables$best, gwasModel, "Best")
 	dev.off()
@@ -75,7 +75,7 @@ createReports <- function (inputDir, genotypeFile, phenotypeFile, gwasModel, out
 	commonBest = markersVennDiagrams (snpTables$best, gwasModel, "Best")
 	dev.off()
 
-	msg ("Writing Venn diagram with significative SNPs...")
+	msgmsg ("Writing Venn diagram with significative SNPs...")
 	outFilename = 
 	png (paste0 (outputDir,"/out-multiGWAS-vennDiagram-significatives.png"), res=72)
 	commonSign = markersVennDiagrams (snpTables$significatives, gwasModel, "Significatives")
@@ -84,7 +84,7 @@ createReports <- function (inputDir, genotypeFile, phenotypeFile, gwasModel, out
 	commonSign = markersVennDiagrams (snpTables$significatives, gwasModel, "Significatives")
 	dev.off ()
 
-	msg ("Writing Manhattan and QQ plots...")
+	msgmsg ("Writing Manhattan and QQ plots...")
 	png (paste0 (outputDir, "/out-multiGWAS-manhattanQQ-plots.png"), width=11, height=15, units="in", res=120)
 	op=markersManhattanPlots (inputDir, gwasModel, commonBest, commonSign, snpTables$significatives, outputDir)
 	dev.off()
@@ -93,7 +93,7 @@ createReports <- function (inputDir, genotypeFile, phenotypeFile, gwasModel, out
 	par (op)
 	dev.off()
 
-	msg ("Creating SNP heatmaps for the 4 best ranked SNPs...")
+	msgmsg ("Creating SNP heatmaps for the 4 best ranked SNPs...")
 	genoNumericFilename = ACGTToNumericGenotypeFormat (genotypeFile)
 	snpList = snpTables$best$SNP [1:4]
 	createHeatmapForSNPList (outputDir, genotypeFile, genoNumericFilename, phenotypeFile, commonSign)
@@ -101,10 +101,13 @@ createReports <- function (inputDir, genotypeFile, phenotypeFile, gwasModel, out
 
 #-------------------------------------------------------------
 # Calculate the inflation factor from -log10 values
+# It can fire warning, here they are hidign
 #-------------------------------------------------------------
-## @knitr calculateInflationFactor
 calculateInflationFactor <- function (scores)
 {
+	oldw <- getOption("warn")
+	options(warn = -1)
+
 	remove <- which(is.na(scores))
 	if (length(remove)>0) 
 		x <- sort(scores[-remove],decreasing=TRUE)
@@ -114,6 +117,8 @@ calculateInflationFactor <- function (scores)
 	pvalues = 10^-x
 	chisq <- na.omit (qchisq(1-pvalues,1))
 	delta  = round (median(chisq)/qchisq(0.5,1), 3)
+
+	options (warn = oldw)
 
 	return (list(delta=delta, scores=x))
 }
@@ -196,7 +201,6 @@ markersVennDiagrams <- function (summaryTable, gwasModel, scoresType){
 	commonSNPs = union (union (a,b),union (union (c,d),union (e,f)))
 
 	mainTitle = paste0(gwasModel, "-", scoresType)
-	msg();msg (mainTitle);msg()
 	v0 <- venn.diagram(x, height=12000, width=12000, alpha = 0.5, filename = NULL, # main=mainTitle,
 						col = c("red", "blue", "green", "yellow"), cex=0.9, margin=0.0,
 						fill = c("red", "blue", "green", "yellow")) 
@@ -226,13 +230,11 @@ markersSummaryTable <- function (inputDir, gwasModel, outputDir="out", nBest=5) 
 	rownames (map) = map [,1]
 
 	files =  list.files(inputDir, pattern=paste0("^(.*(",gwasModel,").*(scores)[^$]*)$"), full.names=T)
-	#msg ("Files: ", inputDir); print (files)
-	msg ("CREATING THE SUMMARY...")
+	msgmsg ("Creating summary table...")
 	summaryTable = data.frame ()
 
 	tool=""
 	for (f in files) {
-		msg ("Processing file: ", f)
 		data <- read.table (file=f, header=T)
 		#if (nrow(data)>nBest) data=data [1:nBest,] 
 		pVal	<- data$P
@@ -287,7 +289,7 @@ markersSummaryTable <- function (inputDir, gwasModel, outputDir="out", nBest=5) 
 # Fast head, for debug only
 #----------------------------------------------------------
 hd <- function (data, m=10,n=10) {
-	msg (deparse (substitute (data)),":")
+	msgmsg (deparse (substitute (data)),":")
 	if (is.null (dim (data)))
 		print (data [1:10])
 	else if (ncol (data) < 10) 
@@ -300,8 +302,7 @@ hd <- function (data, m=10,n=10) {
 #-------------------------------------------------------------
 # Print a log message with the parameter
 #-------------------------------------------------------------
-## @knitr msg
-msg <- function (...) 
+msgmsg <- function (...) 
 {
 		messages = unlist (list (...))
 		cat (">>>>", messages, "\n")
@@ -348,9 +349,7 @@ createDir <- function (newDir) {
 ## @knitr writeConfigurationParameters
 writeConfigurationParameters <- function (inputDir, outputDir) 
 {
-	msg("Reading config file...", inputDir)
 	configFile = paste0(inputDir, list.files (inputDir, pattern="config")[1])
-	msg (configFile)
 
 	params = config::get (file=configFile) 
 
@@ -367,7 +366,6 @@ writeConfigurationParameters <- function (inputDir, outputDir)
 	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="MAF Filter (Minor allele frequency)", VALUE=toString (params$MAF)))
 	paramsDF = rbind  (paramsDF, data.frame (PARAMETER="HWE Filter (Hardy-Weinberg test)", VALUE=toString (params$HWE)))
 
-	msg("Writing config file...", inputDir)
 	outName = paste0(outputDir, "/out-multiGWAS-inputParameters.tbl")
 	write.table (file=outName, paramsDF, quote=F, sep="\t", row.names=F)
 	return (paramsDF)

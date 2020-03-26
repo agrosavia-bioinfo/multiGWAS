@@ -22,44 +22,21 @@ Description: Various R programming tools for plotting data, including:
   - spacing points in an x-y plot so they don't overlap ('space').
 Depends: R (>= 3.0)
 Imports: gtools, gdata, stats, caTools, KernSmooth
-Suggests: grid, MASS, knitr
-VignetteBuilder: knitr
-Version: 3.0.3
-Date: 2020-02-26
-Authors@R: c(
-    person("Gregory R.", "Warnes", , role = "aut"),
-    person("Ben", "Bolker", , role = "aut"),
-    person("Lodewijk", "Bonebakker", , role = "aut"),
-    person("Robert", "Gentleman", role = "aut"),
-    person("Wolfgang", "Huber", role = "aut"),
-    person("Andy", "Liaw", role = "aut"),
-    person("Thomas", "Lumley", role = "aut"),
-    person("Martin", "Maechler", role = "aut"),
-    person("Arni", "Magnusson", role = "aut"),
-    person("Steffen", "Moeller", role = "aut"),
-    person("Marc", "Schwartz", role = "aut"),
-    person("Bill", "Venables", role = "aut"),
-    person("Tal", "Galili", , "tal.galili@gmail.com", c("ctb", "cre"))
-    )
+Suggests: grid, MASS
+Version: 3.0.1.2
+Date: 2016-03-30
+Author: Gregory R. Warnes, Ben Bolker, Lodewijk Bonebakker, Robert
+	Gentleman, Wolfgang Huber Andy Liaw, Thomas Lumley, Martin
+	Maechler, Arni Magnusson, Steffen Moeller, Marc Schwartz, Bill
+	Venables
+Maintainer: ORPHANED
 License: GPL-2
-URL: https://github.com/talgalili/gplots
-BugReports: https://github.com/talgalili/gplots/issues
 NeedsCompilation: no
-Packaged: 2020-02-24 06:26:54 UTC; talgalili
-Author: Gregory R. Warnes [aut],
-  Ben Bolker [aut],
-  Lodewijk Bonebakker [aut],
-  Robert Gentleman [aut],
-  Wolfgang Huber [aut],
-  Andy Liaw [aut],
-  Thomas Lumley [aut],
-  Martin Maechler [aut],
-  Arni Magnusson [aut],
-  Steffen Moeller [aut],
-  Marc Schwartz [aut],
-  Bill Venables [aut],
-  Tal Galili [ctb, cre]
-Maintainer: Tal Galili <tal.galili@gmail.com>
+Packaged: 2020-01-11 16:25:06 UTC; ripley
 Repository: CRAN
-Date/Publication: 2020-02-25 01:20:07 UTC
-Built: R 3.6.3; ; 2020-03-12 16:17:17 UTC; unix
+Date/Publication: 2020-01-11 17:28:31
+X-CRAN-Original-Maintainer: Gregory R. Warnes <greg@warnes.net>
+X-CRAN-Comment: Orphaned and corrected on 2020-01-11.
+ .
+ Last update by original maintainer was in Mar 2016.
+Built: R 3.6.1; ; 2020-02-11 14:53:00 UTC; unix
