@@ -1,5 +1,5 @@
 # Table of Contents
-   * [MultiGWAS-min](#multigwas-min)
+   * [MultiGWAS](#multigwas)
    * [Requirements](#requirements)
    * [Installation](#installation)
       * [General steps to install multiGWAS on a linux system](#general-steps-to-install-multigwas-on-a-linux-system)
@@ -28,7 +28,7 @@ This repository includes:
  - The instructions to run the examples included in MultiGWAS.
  - The description of the input file formats and configuration files.
 
-As an alternative to this minimal installation, there are two other different options to install and test MultiGWAS. The first one is a full installation ([multiGWAS-full](https://github.com/agrosavia/multiGWAS-full)), including a preinstalled Java runtime and the R 3.61 sources to be compiled. And second, there is a ready-to-use Linux virtual machine created with VirtualBox ([MultiGWAS-vm](https://github.com/agrosavia/multiGWAS-vm)).
+As an alternative to this minimal installation, there are two other different options to install and test MultiGWAS. The first one is a full installation ([multiGWAS-full](https://github.com/agrosavia-bioinfo/multiGWAS-full)), including a preinstalled Java runtime and the R 3.61 sources to be compiled. And second, there is a ready-to-use Linux virtual machine created with VirtualBox ([MultiGWAS-vm](https://github.com/agrosavia-bioinfo/multiGWAS-vm)).
 
 
 # Requirements:
