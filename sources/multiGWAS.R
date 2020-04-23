@@ -127,7 +127,7 @@ initOutputDir <- function (configFile, genotypeFile, phenotypeFile)
 #-------------------------------------------------------------
 moveOutFiles <- function (outputDir, reportDir) 
 {
-	runCommand (sprintf ("mv %s/out*scores %s", outputDir, reportDir))
+	runCommand (sprintf ("cp %s/out*scores %s", outputDir, reportDir))
 	runCommand (sprintf ("mv %s/out*pdf %s", outputDir, reportDir))
 	runCommand ("mkdir logs")
 	runCommand ("mv *.log* logs")
@@ -355,8 +355,8 @@ runTasselGwas <- function (params)
 
 	# Join the tables, order by DIFF, and write it
 	scoresTable <- rbind (addTable, domTable, gnrTable)
+	scoresTable = scoresTable [!duplicated (scoresTable$Marker, fromLast=F),]
 	scoresTable <- scoresTable [order (scoresTable$DIFF, decreasing=T),]
-	scoresTable = scoresTable [!duplicated (scoresTable$Marker),]
 	write.table (file=outTassel, scoresTable, quote=F, sep="\t", row.names=F)
 }
 

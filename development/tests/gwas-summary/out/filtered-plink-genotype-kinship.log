@@ -1,0 +1,17 @@
+PLINK v2.00a2LM 64-bit Intel (13 Dec 2019)
+Options in effect:
+  --bfile out/filtered-plink-genotype
+  --king-cutoff 0.354
+  --out out/filtered-plink-genotype-kinship
+
+Hostname: agro
+Working directory: /home/lg/agrosavia/development/multiGWAS/examples/out-full
+Start time: Wed Apr 22 22:07:08 2020
+
+Random number seed: 1587611228
+7817 MiB RAM detected; reserving 3908 MiB for main workspace.
+Using up to 4 compute threads.
+Error: Failed to open out/filtered-plink-genotype.fam : No such file or
+directory.
+
+End time: Wed Apr 22 22:07:08 2020

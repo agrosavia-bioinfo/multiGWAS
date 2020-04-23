@@ -4,6 +4,7 @@
 # AUTHOR : Luis Garreta (lgarreta@agrosavia.co)
 # DATA   : feb/2020
 # LOG: 
+#	r4.2: "markersVennDiagrams" function writes plots
 #	r4.1: Fixed transparency and axis error (options (bitmapType="cairo"))
 #	r4.0: Modified to work with markdown, but better to only report outputs (PNGs) to be included by markdown
 #	r3.0: Manhattan and QQ plots. Formated to create a Markdown report (not yet)
@@ -31,13 +32,16 @@ main <- function () {
 
 	msgmsg ("Main...")
 
-	inputDir    = "out/"
+	inputDir     = "out/"
+	genotypeFile  = "out/filtered-gwasp4-genotype.tbl"
+	phenotypeFile = "out/filtered-gwasp4-phenotype.tbl"
 	outputDir   = "report/"
 	gwasModel    = "Full"
 	reportTitle = "GWAS Report"
-	nBest = 6
+	nBest = 8
 
-	createReports (inputDir, gwasModel, outputDir, outputDir)
+	createReports (inputDir, genotypeFile, phenotypeFile, 
+				   gwasModel, outputDir, nBest)
 }
 
 #-------------------------------------------------------------
@@ -68,31 +72,23 @@ createReports <- function (inputDir, genotypeFile, phenotypeFile, gwasModel, out
 	write.table (file=outName, snpTables$significatives, row.names=F,quote=F, sep="\t")
 
 	msgmsg ("Writing Venn diagram with best SNPs...")
-	png (paste0 (outputDir,"/out-multiGWAS-vennDiagram-best.png"), res=72)
-	commonBest = markersVennDiagrams (snpTables$best, gwasModel, "Best")
-	dev.off()
-	pdf (paste0 (outputDir,"/out-multiGWAS-vennDiagram-best.pdf"))
-	commonBest = markersVennDiagrams (snpTables$best, gwasModel, "Best")
-	dev.off()
+	outFile = paste0 (outputDir,"/out-multiGWAS-vennDiagram-best")
+	commonBest = markersVennDiagrams (snpTables$best, gwasModel, "Best", outFile)
 
 	msgmsg ("Writing Venn diagram with significative SNPs...")
-	outFilename = 
-	png (paste0 (outputDir,"/out-multiGWAS-vennDiagram-significatives.png"), res=72)
-	commonSign = markersVennDiagrams (snpTables$significatives, gwasModel, "Significatives")
-	dev.off ()
-	pdf (paste0 (outputDir,"/out-multiGWAS-vennDiagram-significatives.pdf"))
-	commonSign = markersVennDiagrams (snpTables$significatives, gwasModel, "Significatives")
-	dev.off ()
+	outFile = paste0 (outputDir,"/out-multiGWAS-vennDiagram-significatives")
+	commonSign = markersVennDiagrams (snpTables$significatives, gwasModel, "Significatives", outFile)
 
 	msgmsg ("Writing Manhattan and QQ plots...")
 	png (paste0 (outputDir, "/out-multiGWAS-manhattanQQ-plots.png"), width=11, height=15, units="in", res=120)
-	op=markersManhattanPlots (inputDir, gwasModel, commonBest, commonSign, snpTables$significatives, outputDir)
+	op=markersManhattanPlots (inputDir, gwasModel, commonBest, commonSign, snpTables, outputDir)
 	dev.off()
 	pdf (paste0 (outputDir, "/out-multiGWAS-manhattanQQ-plots.pdf"), width=11, height=15)
-	op=markersManhattanPlots (inputDir, gwasModel, commonBest, commonSign, snpTables$significatives, outputDir)
+	op=markersManhattanPlots (inputDir, gwasModel, commonBest, commonSign, snpTables, outputDir)
 	par (op)
 	dev.off()
 
+	
 	msgmsg ("Creating SNP heatmaps for the 4 best ranked SNPs...")
 	genoNumericFilename = ACGTToNumericGenotypeFormat (genotypeFile)
 	snpList = snpTables$best$SNP [1:4]
@@ -125,8 +121,7 @@ calculateInflationFactor <- function (scores)
 
 #------------------------------------------------------------------------
 #------------------------------------------------------------------------
-## @knitr markersManhattanPlots
-markersManhattanPlots <- function (inputDir, gwasModel, commonBest, commonSign, summarySignificatives, outputDir, nBest=8) {
+markersManhattanPlots <- function (inputDir, gwasModel, commonBest, commonSign, snpTables, outputDir, nBest=8) {
 	files =  list.files(inputDir, pattern=paste0("^(.*(",gwasModel,").*(scores)[^$]*)$"), full.names=T)
 	#pdf (paste0 (outputDir, "/out-summary.manhattan-qq-plots.pdf"), width=11, height=7)
 	op <- par(mfrow = c(4,2), mar=c(3.5,3.5,3,1), oma=c(0,0,0,0), mgp = c(2.2,1,0))
@@ -156,14 +151,16 @@ markersManhattanPlots <- function (inputDir, gwasModel, commonBest, commonSign, 
 			tool = "TASSEL"
 			gwasResults = data.frame (SNP=data$Marker, CHR=data$Chr, BP=data$Pos, P=10^-data$SCORE)
 		}
-		ss = summarySignificatives
+		ss = snpTables$significatives
 		if (tool %in% ss$TOOL)
 			signThresholdScore = min (ss [ss$TOOL==tool,"SCORE"])
 		else
 			signThresholdScore = 0.95*ceiling (data[1, "SCORE"]) 
 
+		bestSNPsTool     = unlist (select (filter (snpTables$best, TOOL==tool), "SNP"))
+		sharedSNPs       = intersect (commonBest, bestSNPsTool)
 		colorsBlueOrange = c("blue4", "orange3")
-		manhattan(gwasResults,col = c("gray10", "gray60"), highlight=intersect (commonBest, gwasResults$SNP), annotatePval=bestThreshold, annotateTop=F,
+		manhattan(gwasResults,col = c("gray10", "gray60"), highlight=sharedSNPs, annotatePval=bestThreshold, annotateTop=F,
 				  suggestiveline=bestThresholdScore, genomewideline=signThresholdScore, main=mainTitle, logp=T, cex=2)
 
 		text (x=0, y=signThresholdScore*1.02, "Significative",, col="red", pos=4)
@@ -182,8 +179,7 @@ markersManhattanPlots <- function (inputDir, gwasModel, commonBest, commonSign, 
 #------------------------------------------------------------------------
 # Create Venn diagram of common markers using info from summary table
 #------------------------------------------------------------------------
-## @knitr markersVennDiagrams
-markersVennDiagrams <- function (summaryTable, gwasModel, scoresType){
+markersVennDiagrams <- function (summaryTable, gwasModel, scoresType, outFile){
 	flog.threshold(ERROR)
 	x <- list()
 	x$GWASpoly = summaryTable %>% filter (TOOL %in% "GWASpoly") %>% select (SNP) %>% .$SNP
@@ -201,7 +197,7 @@ markersVennDiagrams <- function (summaryTable, gwasModel, scoresType){
 	commonSNPs = union (union (a,b),union (union (c,d),union (e,f)))
 
 	mainTitle = paste0(gwasModel, "-", scoresType)
-	v0 <- venn.diagram(x, height=12000, width=12000, alpha = 0.5, filename = NULL, # main=mainTitle,
+	v0 <- venn.diagram(x, height=3000, width=3000, alpha = 0.5, filename = NULL, # main=mainTitle,
 						col = c("red", "blue", "green", "yellow"), cex=0.9, margin=0.0,
 						fill = c("red", "blue", "green", "yellow")) 
 
@@ -213,10 +209,18 @@ markersVennDiagrams <- function (summaryTable, gwasModel, scoresType){
 		pos = posOverlap [i]
 		v0[[pos+8]]$label <- paste(overlaps[[i]], collapse = "\n")
  	}
- 
-	#pdf(paste0(outputDir,"/out-summary-gwas-venndiagram-", scoresType, ".pdf"))
+
+	WIDTH  = 6
+	HEIGHT = 9
+
+ 	png (paste0 (outFile,".png"), width=WIDTH, height=HEIGHT, units="in", res=120)
 	grid.draw(v0)
-	#dev.off()
+	dev.off()
+	pdf (paste0 (outFile,".pdf"), width=WIDTH,height=HEIGHT)
+	grid.draw(v0)
+	dev.off()
+	
+	#grid.draw(v0)
 
 	return (commonSNPs)
 }
@@ -270,7 +274,7 @@ markersSummaryTable <- function (inputDir, gwasModel, outputDir="out", nBest=5) 
 		}
 		if (flagNewData==T) {
 			dfm = data.frame (TOOL=tool, MODEL=gwasModel, CHROM=chrom, POSITION=pos, SNP=snps, 
-							  PVALUE = round (pVal,6), SCORE=pscores, THRESHOLD=tscores, SIGNIFICANCE=signf )
+							  PVALUE = round (pVal,6), SCORE=round (pscores, 4), THRESHOLD=round (tscores,4), SIGNIFICANCE=signf )
 			dfm = dfm %>% distinct (SNP, .keep_all=T)
 			if (nrow(dfm)>nBest) dfm=dfm [1:nBest,] 
 			summaryTable <- rbind (summaryTable, dfm)

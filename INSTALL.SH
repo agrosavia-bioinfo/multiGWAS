@@ -1,15 +1,31 @@
-
+#!/bin/bash
+#
 # Create multiGWAS profile according to current directory
+# 
+#
 echo "Creating multiGWAS profile..."
 
-echo "export MULTIGWAS_HOME=$PWD" > multiGWAS-profile.sh
-echo 'MULTIGWAS_TOOLS=$MULTIGWAS_HOME/tools' >> multiGWAS-profile.sh
-echo 'MULTIGWAS_SOURCES=$MULTIGWAS_HOME/sources' >> multiGWAS-profile.sh
-echo 'export PATH=$PATH:$MULTIGWAS_TOOLS:$MULTIGWAS_SOURCES'>> multiGWAS-profile.sh
+echo ""
+echo "#------------------- multiGWAS HOME ---------------------" >  multiGWAS-profile.sh
+cmm1="export MULTIGWAS_HOME=$PWD" 
+echo $cmm1 >> multiGWAS-profile.sh
+eval $cmm1
+cmm2="MULTIGWAS_TOOLS=$MULTIGWAS_HOME/tools" 
+echo $cmm2 >> multiGWAS-profile.sh
+eval $cmm2
 
-# Update user profile to execute multiGWAS-profile at startup
-echo "Updating user profile..."
+cmm3="MULTIGWAS_SOURCES=$MULTIGWAS_HOME/sources"
+echo $cmm3 >> multiGWAS-profile.sh
+eval $cmm3
 
-echo "\n#------------------- multiGWAS.R tool profi profile ---------------------" >> $HOME/.profile
+cmm4="export PATH=$PATH:$MULTIGWAS_TOOLS:$MULTIGWAS_SOURCES"
+echo $cmm4 >> multiGWAS-profile.sh
+eval $cmm4
+
+echo ""
+echo "MultiGWAS is ready to use, right after installed!"
+echo ""
+echo ""
+echo "#------------------- multiGWAS.R tool profile ---------------------" >> $HOME/.profile
 echo "source $PWD/multiGWAS-profile.sh" >> $HOME/.profile
 

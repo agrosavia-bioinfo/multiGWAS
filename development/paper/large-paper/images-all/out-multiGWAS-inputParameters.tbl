@@ -1,0 +1,12 @@
+PARAMETER	VALUE
+Genotype filename	example-genotype.tbl
+Phenotype filename	example-phenotype.tbl
+Significance level (Genome-wide significance level)	0.05
+Correction method (Bonferroni or FDR)	Bonferroni
+GWAS model (Full or Naive)	Full
+nBest (Number of best-ranked SNPs to be reported)	7
+Filtering (TRUE or FALSE)	TRUE
+MIND Filter (Individual with missing genotype)	0.1
+GENO Filter (SNPs with missing genotype)	0.1
+MAF Filter (Minor allele frequency)	0.01
+HWE Filter (Hardy-Weinberg test)	1e-10

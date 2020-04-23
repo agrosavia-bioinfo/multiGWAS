@@ -1,0 +1,127 @@
+
+\chapter[This is Chapter One Title containing authors and affiliations]{This is Chapter One Title containing authors and affiliations\protect\footnote{This is a sample for chapter footnote.}}
+
+\author*[1]{Author I}
+\author[2]{Author II}
+\author[1]{Author III}
+\author[3]{Author IV}
+
+\address[1]{\orgdiv{I Author Organization Division Name}, 
+\orgname{Organization Name}, 
+\postcode{Postal Code}, \countrypart{Part of the Country}, 
+     \city{City Name}, \street{Street Name}, \country{Country}}%
+
+\address[2]{\orgdiv{II Author Organization Division Name}, 
+\orgname{Organization Name}, 
+\postcode{Postal Code}, \countrypart{Part of the Country}, 
+     \city{City Name}, \street{Street Name}, \country{Country}}%
+
+\address[3]{\orgdiv{II Author Organization Division Name}, 
+\orgname{Organization Name}, 
+\postcode{Postal Code}, \countrypart{Part of the Country}, 
+     \city{City Name}, \street{Street Name}, \country{Country}}%
+
+\address*{Corresponding Author: Author; \email{corresauthor@gmail.com}}
+
+\maketitle% This tag is required to print author and address in the output
+
+\begin{abstract}{Abstract Title Here}
+Abstract para text. Abstract para text. Abstract para text. Abstract para text. 
+Abstract para text. Abstract para text. Abstract para text. Abstract para text.
+
+Abstract next para text. Abstract para text. Abstract para text. Abstract para text. 
+Abstract para text. If multiple abstracts exists, then \textbf{absgroup} tag 
+will be inserted by the tool.
+\end{abstract}
+
+\begin{abstract}{}
+Abstract text. Abstract text. Abstract text. Abstract text. 
+\end{abstract}
+
+\keywords{Key word 1, Key word 2, \ldots}
+
+\section{This is First Level Heading}
+
+\lipsum[1-2]
+
+\subsection{This is Second Level Heading}
+
+\lipsum[3]
+
+For example, multiple citations from the \index{bibliography} of this \index{article}:
+citet: \citet{CR7,CR8}, citep: \citep{CR9,CR6}.
+As you see in Table~\ref{tab1-2}, the citations are \index{automatically!hyperlinked!citations} to their
+reference in the bibliography. Refer Figure~\ref{fig1-1} for details:
+
+\begin{figure}
+\includegraphics{01.eps}
+\caption{Figure Caption. Figure Caption.
+Figure Caption. Figure Caption. Figure Caption. 
+Figure Caption. Figure Caption.
+\label{fig1-1}}
+\end{figure}
+
+For example, multiple citations from the \index{bibliography} of this \index{article}:
+citet: \citet{CR9,CR6}, citep: \citep{CR9,CR6}.
+As you see in Table~\ref{tab1-1}, the citations are \index{main entry with turn over lines main entry with turn over lines!subentry with turn over lines subentry with turn over lines!subsubentry with turn over lines subsubentry with turn over lines} to their
+reference in the bibliography (Equation~\ref{eq1-1}).
+\begin{equation}
+\mathcal{L}\quad \mathbf{\mathcal{L}} = i \bar{\psi} \gamma^\mu D_\mu \psi - 
+\frac{1}{4} F_{\mu\nu}^a F^{a\mu\nu} - m \bar{\psi} \psi\label{eq1-1}
+\end{equation}
+
+\subsubsection{This is Third Level Heading}
+
+The manifestation of solar activity (flares, bursts, and others) occurs over the whole Sun, and most of radio astronomy observations are made from the Earth's surface, whereas a significant part of solar radio events (those from the far side of the Sun) is not available for terrestrial observers.
+\begin{equation}
+\mathcal{L}\quad \mathbf{\mathcal{L}} = i \bar{\psi} \gamma^\mu D_\mu \psi - 
+\frac{1}{4} F_{\mu\nu}^a F^{a\mu\nu} - m \bar{\psi} \psi\label{eq1-2}
+\end{equation}
+
+\paragraph{This is Fourth Level Heading}
+
+\lipsum[5]
+
+\begin{table}
+\caption{Enter table caption here.\label{tab1-1}}{%
+\begin{tabular}{@{}cccc@{}}
+\toprule
+Tap     &Relative   &Relative   &Relative mean\\
+number  &power (dB) &delay (ns) &power (dB)\\
+\midrule
+3 &0$-9.0$  &68,900\footnotemark[1] &$-12.8$\\
+4 &$-10.0$ &12,900\footnotemark[2] &$-10.0$\\
+5 &$-15.0$ &17,100 &$-25.2$\\
+\botrule
+\end{tabular}}{\footnotetext[]{Source: Example for table source text.}
+\footnotetext[1]{Example for a first table footnote. Example for a first table footnote. Example for a first table footnote. Example for a first table footnote.}
+\footnotetext[2]{Example for a second table footnote.}}
+\end{table}
+
+\subparagraph{This is Fifth Level Heading}
+
+\lipsum[6]
+
+The manifestation of solar activity (flares, bursts, and others) occurs over the whole Sun, and most of radio astronomy observations are made from the Earth's surface, whereas a significant part of solar radio events (those from the far side of the Sun) is not available for terrestrial observers (Equation~\ref{eq1-2}).
+
+\begin{table}
+\caption{Enter table caption here.\label{tab1-2}}{%
+\begin{tabular}{@{}cccc@{}}
+\toprule
+Tap     &Relative   &Relative   &Relative mean\\
+number  &power (dB) &delay (ns) &power (dB)\\
+\midrule
+3 &0$-9.0$  &68,900\footnotemark[1] &$-12.8$\\
+4 &$-10.0$ &12,900\footnotemark[2] &$-10.0$\\
+5 &$-15.0$ &17,100 &$-25.2$\\
+\botrule
+\end{tabular}}{\footnotetext[]{Source: Example for table source text.}
+\footnotetext[1]{Example for a first table footnote. Example for a first table footnote. Example for a first table footnote. Example for a first table footnote.}
+\footnotetext[2]{Example for a second table footnote.}}
+\end{table}
+
+\backmatter
+
+\bibliographystyle{plainnat}
+\bibliography{wiley}%
+
