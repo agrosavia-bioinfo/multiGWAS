@@ -958,7 +958,7 @@ convertVCFToGenodiveFormat <- function (genotypeFile) {
 #----------------------------------------------------------
 ACGTToNumericGenotypeFormat <- function (genotypeFile, ploidy, MAP=F) 
 {
-	NCORES = detectCores()-1
+	NCORES = ifelse (detectCores()>1, detectCores()-1, 1)
 	geno = read.csv (file=genotypeFile, header=T, check.names=F)
 
 	markers           = as.matrix(geno[,-(1:3)])
@@ -1190,7 +1190,7 @@ commandArgsFitpoly <- function (args) {
 	fitGenos     = read.table (fitGenosFile, sep="\t", header=T)		
 	nCores       = ifelse (detectCores()>1, detectCores()-1, 1)
 
-	outs         = mclapply (snpList, createMatrix, fitGenos, mc.cores=7)
+	outs         = mclapply (snpList, createMatrix, fitGenos, mc.cores=detectCores())
 	fitGenosDF   = do.call (rbind.data.frame, outs)
 
 	outFilename  = addLabel (fitGenosFile, "MATRIX")
