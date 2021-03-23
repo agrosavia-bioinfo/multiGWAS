@@ -1,3 +1,0 @@
-#!/bin/bash
-configFile=$1
-Rscript	$MULTIGWAS_HOME/sources/multiGWAS.R $configFile

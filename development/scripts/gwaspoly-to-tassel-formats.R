@@ -1,1 +1,0 @@
-/home/lg/agrosavia/projects/gwas-tassel/gwaspoly-to-tassel-formats.R

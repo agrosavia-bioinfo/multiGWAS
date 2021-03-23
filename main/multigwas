@@ -1,0 +1,5 @@
+#!/bin/bash
+configFile=$1
+outputDir=$2
+Rscript	$MULTIGWAS_HOME/main/multigwas.R $configFile $outputDir
+read -p "Press any key to continue" -n 1 -r

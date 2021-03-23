@@ -1,5 +1,0 @@
-#% Do not delete the line below; configure depends on this      
-#  \DeclareLaTeXClass[bioinfo]{article (Bioinformatics)}
-
-# Read the definitions from article.layout
-Input stdclass.inc

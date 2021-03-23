@@ -1,1 +1,0 @@
-/home/lg/agrosavia/development/multiGWAS-min/sources/gwas-heatmap.R

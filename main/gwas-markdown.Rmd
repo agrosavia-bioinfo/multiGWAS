@@ -1,0 +1,158 @@
+---
+params:
+  workingDir  : "in/"
+  reportTitle : "MultiGWAS report"
+  nBest       : 6
+  R2          : 1
+
+output: 
+  html_document: 
+    theme: cerulean 
+    toc: true
+    number_sections: true
+---
+
+---
+title  : `r params$reportTitle`
+
+---
+
+MultiGWAS is a tool to do GWAS analysis in tetraploid organisms by executing in parallel and integrating the results from four existing GWAS software: two available for polyploids (GWASpoly and SHEsis) and two frequently used for diploids (PLINK and TASSEL). 
+
+MultiGWAS executes two types of GWAS models: Full and Naive.  The Full model with control for population structure and individual relatedness and the Naive model without any control. In both models, users can apply different control quality filters for the genomic data. 
+
+This report, created by the MultiGWAS tool, is a summary of the input parameters used to run the tool and its main outputs, including (1) Score tables with detailed information on the associations for each tool. (2) Venn diagrams of shared SNPs among the four tools. (3) Heatmaps of significant SNP profiles among the four tools. (4) Manhattan and QQ plots for the association found by each tool. And (5) Chord diagrams for the chromosomes vs. SNP by each tool.
+
+```{r includeKnit, include=FALSE,echo=FALSE}
+library(knitr)
+library(kableExtra)
+```
+
+```{r  echo=FALSE, message=FALSE}
+inputDir = paste0 (params$workingDir, "/report/")
+nBest    = params$nBest
+R2       = params$R2
+```
+
+```{r setKnitOptions, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, echo=FALSE, warning=FALSE, message=FALSE)
+cachedata = FALSE
+cachemodels = FALSE
+```
+
+# Input Parameters
+
+MultiGWAS uses as input a configuration file where the user specifies the input genomic data (genotype and phenotype files) along with different values for parameters used by the MultiGWAS tool and by the other four GWAS software (GWASpoly, SHEsis, PLINK, and TASSEL).  
+
+The following table shows the current input parameters specified by the user in the configuration file:  
+
+```{r printTableInputParameters }
+paramsDF = read.table (file=paste0(inputDir,"out-multiGWAS-inputParameters.tbl"), header=T, sep="\t")
+kable (paramsDF) %>%
+ 	kable_styling(bootstrap_options = c("striped", "hover", "condensed", font_size=5))
+```
+
+# SNPs in Linkage Disequilibrium above $R^2$ = `r R2`
+```{r SNPsHighLDTable,  echo=FALSE, message=FALSE}
+SNPsHighLDFile = paste0(inputDir, "/out-SNPsHighLD-Table.csv")
+if (file.exists (SNPsHighLDFile)) {
+	cat ("The following table shows the SNPs in Linkage Disequilibrium") 
+	LD_FLAG = T
+}else { 
+	cat ("There were no SNPs in Linkage Disequilibrium")
+	LD_FLAG = F
+}
+```
+
+```{r SNPsTable, eval=LD_FLAG}
+	SNPsHighLDTable = read.csv (SNPsHighLDFile)
+	kable (SNPsHighLDTable) %>%
+ 		kable_styling(bootstrap_options = c("striped", "hover", "condensed", font_size=5))
+```
+
+```{asis, echo=LD_FLAG}
+## Venn diagram for SNPs in LD
+The Venn diagram shows SNPs in LD named as 'LD_SNP_XX'. Shared SNPs appear in the intersection areas of the diagram.
+```
+
+```{r vennDiagramLD, fig.align = "center", echo=FALSE, message=FALSE, fig.width=5, fig.height=5, fig.fullwidth=TRUE, eval=LD_FLAG}
+knitr::include_graphics (paste0(inputDir,"/out-multiGWAS-vennDiagram-LD.png"))
+```
+
+# Best-ranked SNPs
+This section shows a table and a Venn diagram for the best ranked SNPs (For this report, N=`r nBest`). The configuration file allows defining the parameter N.  
+
+## Table of best-ranked SNPs
+The following table shows the associations between SNPs and the trait as transformed p-values to scores as -log 10 (p-value) sorted from the highest to the lowest scores based on each tool analysis and the model selected (Full or Naive). Each SNP has its associated information, such as the chromosome, position in the genome, and name. Also, based on the threshold calculated by a multiple testing correction (i.e., Bonferroni or FDR), the table marks the significance of each SNP as a TRUE or FALSE.  
+
+
+```{r printTableBest,  echo=FALSE, message=FALSE}
+bestTable = read.table (file=paste0(inputDir, "/out-multiGWAS-scoresTable-best.scores"), header=T, sep="\t")
+kable (bestTable) %>%
+ 	kable_styling(bootstrap_options = c("striped", "hover", "condensed", font_size=5))
+```
+
+## Venn diagram of best-ranked SNPs
+
+
+
+```{r vennDiagramBest, fig.align = "center", echo=FALSE, message=FALSE, fig.width=5, fig.height=5, fig.fullwidth=TRUE}
+knitr::include_graphics (paste0(inputDir,"/out-multiGWAS-vennDiagram-best.png"))
+```
+
+
+# Significant SNPs
+This section shows a table and a Venn diagram for the signifcative SNPs (score is above the significance threshold for each tool).  
+
+
+## Table of significant SNPs
+
+The following table shows the associations between SNPs and the trait as transformed p-values to scores as -log 10 (p-value) sorted from the highest to the lowest scores based on each tool analysis and the model selected (Full or Naive). Each SNP has its associated information, such as the chromosome, position in the genome, and name.  
+
+```{r  echo=FALSE, message=FALSE}
+significantsTable = read.table (file=paste0(inputDir, "/out-multiGWAS-scoresTable-significants.scores"), header=T, sep="\t")
+kable (significantsTable) %>%
+ 	kable_styling(bootstrap_options = c("striped", "hover", "condensed", font_size=5))
+```
+
+
+## Venn diagram of significant SNPs
+
+The Venn diagram shows the significant SNPs that are either unique or shared by the four software. Shared SNPs appear in the intersection areas of the diagram.
+
+```{r vennDiagramSignificant, fig.align = "center", echo=FALSE, message=FALSE, fig.width=5, fig.height=5, fig.fullwidth=TRUE}
+knitr::include_graphics (paste0 (inputDir,"/out-multiGWAS-vennDiagram-significants.png"))
+```
+
+# Manhattan and QQ plots
+MultiGWAS uses classical Manhattan and Quantile–Quantile (QQ) plots to visually summarize GWAS results and identify both best-ranked and significant SNPs for each GWAS software. The Manhattan plot shows each SNPs distributed in the genetic location (x-axis) vs. the p-value (y-axis). The best-ranked SNPs are above the blue line and the significant SNPs above the blue line. In green are the SNPs that got 
+high scores in more than one software. 
+
+The QQ plot plots the observed (black dot lines) vs. expected -log 10 (p-value) (red line).
+
+```{r  fig.widht=11, fig.height=30, fig.fullwidth=TRUE}
+knitr::include_graphics (paste0 (inputDir, "/out-multiGWAS-manhattanQQ-plots.png"))
+```
+
+# Chord diagrams for SNPs by chromosome
+Chord diagrams are used in MultiGWAS to highlight nearby SNPs found on the same chromosome. These SNPs may have been identified simultaneously by multiple GWAS packets, which can be interpreted as a possible strong association, as in the Manhattan charts, where these associations form clean peaks with multiple SNPs displaying the same signal.
+
+Next, we show the chord diagram for the shared SNPs shown in the Venn diagram of the best-ranked SNPs (Section 2.2).
+
+```{r chordDiagram, fig.align = "center", echo=FALSE, message=FALSE, fig.width=5, fig.height=5, fig.fullwidth=TRUE}
+knitr::include_graphics (paste0 (inputDir, "/out-multiGWAS-scoresTable-best-chordDiagram.png"))
+```
+
+# Profiles for common significant SNPs 
+For the common significant SNPs, MultiGWAS provides a figure to visualize each trait by individuals (rows)  and genotypes (columns). At the left, the individuals are grouped in a dendrogram by their genotype. At the  right, there is the name or ID of each individual. At the bottom, the genotypes are ordered from left to right, starting from the major to the minor allele (i.e., AAAA, AAAB, AABB, ABBB, BBBB). At the top, there is a  description of the trait based on a histogram of frequency (top left) and by an assigned color for each  numerical phenotype value using a grayscale (top right). Thus, each individual appears as a colored line  by its phenotype value on its genotype column. For each column, there is a solid cyan line with the mean  of each column and a broken cyan line that indicates how far the cell deviates from the mean.  
+
+Because each multiGWAS report shows one specific trait at a time, the histogram and color key will remain the same for all the best-ranked SNPs.  
+
+```{r, results='asis', echo=FALSE}
+snpFileList =  list.files(inputDir, pattern=paste0("^(.*(","SNPProfile",").*(png)[^$]*)$"), full.names=T)
+for (snpFile in snpFileList) {
+	cat("![](", snpFile, ")")
+	cat ("</p>")
+}
+```
+

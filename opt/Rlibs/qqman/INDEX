@@ -1,5 +1,0 @@
-gwasResults             Simulated GWAS results
-manhattan               Creates a manhattan plot
-qq                      Creates a Q-Q plot
-qqman                   Create Q-Q and manhattan plots for GWAS data.
-snpsOfInterest          snpsOfInterest

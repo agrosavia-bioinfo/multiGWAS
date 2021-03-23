@@ -1,7 +1,0 @@
-A.mat                   Additive relationship matrix
-GWAS                    Genome-wide association analysis
-kin.blup                Genotypic value prediction based on kinship
-kinship.BLUP            Genomic prediction by kinship-BLUP (deprecated)
-mixed.solve             Mixed-model solver
-rrBLUP                  Ridge regression and other kernels for genomic
-                        selection
