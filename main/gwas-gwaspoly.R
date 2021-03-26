@@ -26,6 +26,8 @@ main <- function () {
 	msgmsg("Running GWASpoly...")
 
 	# Read input genotype and genotype (format: "numeric", "AB", or "ACGT")
+
+	# Divert messages to that file
 	data1 <- initGWAS (params$phenotypeFile, params$genotypeFile, params$ploidy, "ACGT")
 
 	# Control population structure
@@ -41,7 +43,12 @@ main <- function () {
 # Set parameters and run GWASpoly tool
 #-------------------------------------------------------------
 runToolGwaspoly <- function (params) {
-	msgmsg("Running GWASpoly GWAS...")
+	# Redirect GAPIT output
+	if (DEBUG==F) {
+		log <- file("log-GWASpoly-outputs.log", open = "wt")
+		sink (log, type="output")
+		sink (log, type="message")
+	}
 
 	scoresFile = paste0 ("out/tool-GWASpoly-scores-", params$gwasModel, ".csv")
 
@@ -63,8 +70,6 @@ runToolGwaspoly <- function (params) {
 		else
 			snpModels = c(params$geneAction)
 
-	msg ("SNPModels: ", snpModels)
-
 	params = append (params, list (snpModels=snpModels))
 
 	# Read input genotype and genotype (format: "numeric", "AB", or "ACGT")
@@ -76,12 +81,10 @@ runToolGwaspoly <- function (params) {
 
 	# GWAS execution
 	data3 <- runGwaspoly (data2, params, NCORES) 
-						  #params$gwasModel, params$snpModels,params$correctionMethod )
 
 	# Show results in GWASpoly way
 	msgmsg ("    >>>> GWASpoly showResults...")
 	showResults (data3, params$snpModels, params$trait, params$gwasModel,params$phenotypeFile, params$ploidy)
-	msg ("...Ending GWASpoly")
 
 	# Get SNP associations
 	scores  = getQTLGWASpoly (data3, params$gwasModel, params$ploidy)
@@ -91,6 +94,11 @@ runToolGwaspoly <- function (params) {
 	scores <- data.frame (scores[,scoresColumns], scores [,setdiff (colnames(scores), scoresColumns)])
 
 	write.table (file=scoresFile, scores, quote=F, sep="\t", row.names=F)
+
+	# Restore normal output
+	if (DEBUG==F) {
+		sink ();sink()
+	}
 
 	return (list (tool="GWASpoly", scoresFile=scoresFile, scores=scores))
 }

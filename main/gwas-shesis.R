@@ -7,8 +7,6 @@
 #-------------------------------------------------------------
 runToolShesis <- function (params) 
 {
-	msgmsg ("Running SHEsis... ")
-
 	geneAction = params$geneAction
 	#if (geneAction != "automatic" & geneAction != "additive")
 	#	return ()

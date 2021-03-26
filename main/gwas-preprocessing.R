@@ -712,6 +712,12 @@ getReferenceAllele <- function (x) {
 	}
 	if (sum(ans)==1) {ref.alt <- c(bases[which(ans==1)],NA)}
 
+	if (!"ref.alt" %in% ls()) {
+		message ("------------------------------------------------")
+		message ("ERROR: The genotype has errors. Program stopped!")
+		message ("------------------------------------------------")
+		quit ()
+	}
 	return (ref.alt)
 }
 

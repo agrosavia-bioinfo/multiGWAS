@@ -30,15 +30,17 @@ Table of Contents
 MultiGWAS can be installed from scratch on a Linux system (tested on Ubuntu 20.04). by following these instructions: 
 ```
 1. Open a linux console (or terminal)
-2. If not installed, install R (R>=3.6) and Java
-    sudo apt install r-base-core default-jre
-3. Download or clone the MultiGWAS repository (it needs git tool installed): 
+2. If not installed, install R (R>=3.6), Java, and git
+    sudo apt install r-base-core 
+    sudo apt install default-jre
+    sudo apt install git
+3. Download or clone the MultiGWAS repository 
     git clone https://github.com/agrosavia-bioinfo/multiGWAS.git
 4. Change to install directory:
     cd install
 5. Run the bash script to install the necessary linux packages (it needs sudo privileges).
     sh install-linux-packages.sh
-6. Execute the R script for installing needed R libraries:
+6. Execute the R script to install the necessary R libraries:
     Rscript install-R-libraries.R
 7. Reload bashrc configuration file:
     source ~/.bashrc

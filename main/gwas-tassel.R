@@ -23,9 +23,6 @@ runToolTassel <- function (params) {
 		tasselFile   = list.files("out/", pattern=sprintf("^(.*(%s).*(stats).*(txt)[^$]*)$",model), full.names=T)
 	}
 	
-	# Rename output file
-	msgmsg ("Tassel output file: ", tasselFile)
-
 	# Create table by group of p-values: p, pAdd, and pDom
 	results      <- read.table (file=tasselFile, header=T, sep="\t", check.names=F)
 	# Returns a new table according to "varP" values
@@ -75,7 +72,6 @@ runToolTassel <- function (params) {
 	}
 	colnames (scoresTableAll)[colnames(scoresTableAll) %in% c("Chr","Pos")] = c ("CHR","POS")
 	write.table (scoresTableAll, scoresFile, quote=F, sep="\t", row.names=F)
-	msg ("... Ending TASSEL")
 
 	return (list (tool="TASSEL", scoresFile=scoresFile, scores=scoresTableAll))
 }

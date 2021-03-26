@@ -29,8 +29,14 @@ main <- function () {
 #-------------------------------------------------------------
 runToolGapit <- function (params) {
 
-	if (DEBUG==F) sink ("log-GAPIT-outputs.log")
+	# Redirect GAPIT output
+	if (DEBUG==F) {
+		log <- file("log-GAPIT-outputs.log", open = "wt")
+		sink (log, type="output")
+		sink (log, type="message")
+	}
 
+	# Run GAPIT
 	scoresFile = paste0 ("out/tool-GAPIT-scores-", params$gwasModel, ".csv")
 	if (params$geneAction=="additive") {
 		scoresMgwas = runGapit ("additive", params$genotypeFile, params$phenotype, scoresFile, params)
@@ -42,7 +48,11 @@ runToolGapit <- function (params) {
 	}
 
 	write.table (scoresMgwas, scoresFile, sep="\t", row.names=F, quote=F)
-	if (DEBUG==F) sink ()
+
+	# Restore normal output
+	if (DEBUG==F) {
+		sink ();sink()
+	}
 
 	return (list (tool="GAPIT", scoresFile=scoresFile, scores=scoresMgwas))
 }

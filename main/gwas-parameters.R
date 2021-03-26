@@ -19,13 +19,15 @@ main <- function () {
 readCheckConfigParameters <- function (paramsFile) {
 	params = tryCatch (yaml.load_file (paramsFile), 
 					   error=function (cond){
-						   stop ("Some errors in configuration file. Check for valid or repeated names!!!")
+							message ("------------------------------------------------------------------")
+						   	message ("Errors in configuration file. Check for valid or repeated names!!!")
+							message ("------------------------------------------------------------------")
+							quit()
 					   })
 	params = checkParameterR2 (params)         # default 1.0
 	params = checkParameterGeneAction (params) # default "additive"
-	params = checkParameterTraitType (params)  # default "quantitative"
 	params = checkParameterCorrectionMethod (params)
-	print (params);quit ()
+	if (is.null (params$traitType)) params$traitType = "quantitative"
 
 	params$paramsFilename = paramsFile
 
@@ -36,47 +38,35 @@ readCheckConfigParameters <- function (paramsFile) {
 	params$tools            = tolower (params$tools) 
 	params$geneAction       = tolower (params$geneAction) 
 
-
 	`%notin%` <- Negate(`%in%`)
 
 	# Check possible errors in ploidy 
 	if (params$ploidy %notin% c("2", "4"))   stop ("MG Error: Ploidy not supported")
 
 	# Create output dir, check input files, and copy files to output dir
-	outDir   = paste0 ("out-", strsplit (paramsFile, split="[.]") [[1]][1])
-	createDir (outDir)
+	runningDir   = paste0 ("out-", strsplit (paramsFile, split="[.]") [[1]][1])
+	createDir (runningDir)
 	if (!file.exists (params$genotypeFile)) 
 		stop (sprintf ("MG Error: Genotype file not found: '%s'", params$genotypeFile), call.=T)
-	runCommand(sprintf ("cp %s %s", params$genotypeFile, outDir))
+	runCommand(sprintf ("cp %s %s", params$genotypeFile, runningDir))
 	params$genotypeFile  = basename (params$genotypeFile)
 
 	if (!file.exists (params$phenotypeFile)) 
 		stop (sprintf ("MG Error: Phenotype file not found: '%s'", params$phenotypeFile), call.=T)
-	runCommand(sprintf ("cp %s %s", params$phenotypeFile, outDir))
+	runCommand(sprintf ("cp %s %s", params$phenotypeFile, runningDir))
 	params$phenotypeFile = basename (params$phenotypeFile)
 
-	if (tolower (params$genotypeFormat) %in% c("kmatrix", "fitpoly", "updog")) {
+	if (tolower (params$genotypeFormat) %in% c("matrix", "fitpoly", "updog")) {
 		if (is.null (params$mapFile) | !file.exists (params$mapFile))      
 			stop ("MG Error: Map file not found or not specified in the config file", call.=T)
-		file.copy (params$mapFile, outDir)
+		file.copy (params$mapFile, runningDir)
 		params$mapFile = basename (params$mapFile)
 	}
-	# Change to the output dir and set global OUTDIR 
-	setwd (outDir)
-	#OUTDIR <<- paste0 (getwd(), "/", outDir)
+
+	# Change to the output dir and set global runningDir 
+	setwd (runningDir)
+	params$runningPath = getwd()
 	
-	# Create params files for each trait
-	phenotype = read.csv (params$phenotypeFile, check.names=F)
-	traitList = colnames (phenotype)[-1]
-	traitConfigList = c()
-	for (traitName in traitList) {
-		params$trait = traitName
-		traitConfig     = createTraitConfigFiles (phenotype, traitName, paramsFile, params)
-		traitConfigList = c (traitConfigList, traitConfig)
-	}
-
-	params$traitConfigList = traitConfigList 
-
 	# Print params file
 	msgmsg ("-----------------------------------------------------------")
 	msgmsg ("Summary of configuration parameters:")
@@ -85,8 +75,6 @@ readCheckConfigParameters <- function (paramsFile) {
 		msgmsg (sprintf ("%-18s : %s", names (params[i]), 
 			if (is.null (params [i][[1]])) "NULL" else params [i][[1]]    ))
 	msgmsg ("-----------------------------------------------------------")
-
-
 
 	return (params)
 }
@@ -118,19 +106,6 @@ checkParameterGeneAction <- function (params) {
 }
 
 #----------------------------------------------------------
-# TraitType
-#----------------------------------------------------------
-checkParameterTraitType <- function (params) {
-	if (is.null (params$traitType)) {
-		message ("-----------------------------------------------------------------------------")
-		message ('WARNING!! "traitType" parameter not defined, assumed traitType = quantitative')
-		message ("-----------------------------------------------------------------------------")
-		params$traitType = "quantitative"
-	}
-	return (params)
-}
-
-#----------------------------------------------------------
 # Correction method: "FDR" or "Bonferroni"
 #----------------------------------------------------------
 checkParameterCorrectionMethod <- function (params) {
@@ -144,6 +119,11 @@ checkParameterCorrectionMethod <- function (params) {
 	params$correctionMethod   = tolower (params$correctionMethod) 
 	if (params$correctionMethod %notin% c("bonferroni", "fdr"))
 		stop (paste0 ("MG Error: Unknown correction method: ", params$correctionMethod), call.=T)
+
+	if (params$correctionMethod=="bonferroni")
+		params$correctionMethod = "Bonferroni"
+	if (params$correctionMethod=="fdr")
+		params$correctionMethod = "FDR"
 
 	return (params)
 }

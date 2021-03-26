@@ -141,7 +141,6 @@ createVennDiagrams <- function (results, snpTables, gwasModel, outputDir, params
 	# Check if there is any "scoresLDFile" in results
 	if (any (sapply (results, function (res) !is.null (res$scoresLDFile)))) {
 		snpTables   = markersSummaryTableLD (results, params, LD=T)
-		view (snpTables$best)
 		commonLD   = markersVennDiagramsLD (results, snpTables$best, gwasModel, "Best", fileVennDiagramLD, LD=T)
 	}
 
@@ -441,9 +440,6 @@ markersSummaryTableLD <- function (results, params, LD=FALSE) {
 
 	for (res in results) {
 		TOOL       = res$tool
-		message (">>>> ", TOOL )
-		print (res$scoresLDFile)
-
 		# Select type of scoresFile
 		scoresFile = if (LD==TRUE) res$scoresLDFile else res$scoresFile 
 
@@ -567,19 +563,22 @@ writeConfigurationParameters <- function (inputDir, outputDir) {
 	params     = yaml.load_file (paramsFile, merge.precedence="order") 
 
 	configDF = data.frame (PARAMETER=character(), VALUE=character ())
-	configDF = rbind  (configDF, data.frame (PARAMETER="Ploidy (4 or 2)", VALUE=toString (params$ploidy)))
 	configDF = rbind  (configDF, data.frame (PARAMETER="Genotype filename", VALUE=toString (params$genotypeFile)))
 	configDF = rbind  (configDF, data.frame (PARAMETER="Phenotype filename", VALUE=toString (params$phenotypeFile)))
+	configDF = rbind  (configDF, data.frame (PARAMETER="Genotype format (gwaspoly, matrix, vcf, updog, fitpoly)", VALUE=toString (params$genotypeFormat)))
+	configDF = rbind  (configDF, data.frame (PARAMETER="Map filename", VALUE=toString (params$mapFile)))
+	configDF = rbind  (configDF, data.frame (PARAMETER="Ploidy (4 or 2)", VALUE=toString (params$ploidy)))
 	configDF = rbind  (configDF, data.frame (PARAMETER="Significance level (Genome-wide significance level)", VALUE=toString (params$significanceLevel)))
 	configDF = rbind  (configDF, data.frame (PARAMETER="Correction method (Bonferroni or FDR)", VALUE=toString (params$correctionMethod)))
 	configDF = rbind  (configDF, data.frame (PARAMETER="GWAS model (Full or Naive)", VALUE=toString (params$gwasModel)))
-	configDF = rbind  (configDF, data.frame (PARAMETER="nBest (Number of best-ranked SNPs to be reported)", VALUE=toString (params$nBest)))
 	configDF = rbind  (configDF, data.frame (PARAMETER="Filtering (TRUE or FALSE)", VALUE=toString (params$filtering)))
 	configDF = rbind  (configDF, data.frame (PARAMETER="MIND Filter (Individual with missing genotype)", VALUE=toString (params$MIND)))
 	configDF = rbind  (configDF, data.frame (PARAMETER="GENO Filter (SNPs with missing genotype)", VALUE=toString (params$GENO)))
 	configDF = rbind  (configDF, data.frame (PARAMETER="MAF Filter (Minor allele frequency)", VALUE=toString (params$MAF)))
 	configDF = rbind  (configDF, data.frame (PARAMETER="HWE Filter (Hardy-Weinberg test)", VALUE=toString (params$HWE)))
+	configDF = rbind  (configDF, data.frame (PARAMETER="R2 LD (Linkage disequilibrium threshold)", VALUE=toString (params$R2)))
 	configDF = rbind  (configDF, data.frame (PARAMETER="GWAS Tools", VALUE=toString (params$tools)))
+	configDF = rbind  (configDF, data.frame (PARAMETER="nBest (Number of top SNPs to be reported)", VALUE=toString (params$nBest)))
 
 	outName = paste0(outputDir, "/out-multiGWAS-inputParameters.tbl")
 	write.table (file=outName, configDF, quote=F, sep="\t", row.names=F)

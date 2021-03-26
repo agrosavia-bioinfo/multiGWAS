@@ -44,7 +44,7 @@ message ("Packages to install: ", paste (packagesNotInstalled));Sys.sleep (3)
 install.packages (packagesNotInstalled, repos=libRepo)
 
 if (!"multtest" %in% packagesInstalled)
-	BiocManager::install("multtest", site_repository="file:///opt/miniCRAN")
+	BiocManager::install("multtest", site_repository=libRepo)
 if (!"GWASpoly" %in% packagesInstalled)
 	install.packages(paste0(libSources,'/GWASpoly_1.3.tar.gz'), lib=libPath, repos=NULL, type="source") 
 #------------------------------------------------------------------------------
