@@ -110,7 +110,7 @@ createTableFromQuantitativeResults <- function (outFile, params, geneAction) {
 	scores    = -log10 (pValues)
 
 	# Set Columns
-	map <- read.table (file="out/map.tbl", sep="\t", check.names=F)
+	map <- read.csv ("out/map.csv", check.names=F)
 	rownames (map) = map [,1]
 	Marker <- as.character (results$SNP)
 	CHR <- map [Marker, 2]

@@ -3,6 +3,10 @@
 # Create multiGWAS profile according to current directory
 # 
 
+# Remove previous installations
+sed "/multiGWAS/d" -i ~/.bashrc
+
+# Start installation
 MULTIGWAS_HOME = strsplit (getwd (), "/install")[[1]][1]
 message ("MULTIGWAS_HOME=",MULTIGWAS_HOME)
 
@@ -50,9 +54,6 @@ if (!"GWASpoly" %in% packagesInstalled)
 #------------------------------------------------------------------------------
 
 
-
-
-
 .libPaths (libPath)
 
 # Copy multiGWAS profile to multiGWAS home
@@ -63,7 +64,4 @@ message ("Close the terminal to finish the installation process")
 message ("Then, open a new terminal and write: ")
 message ("multiGWAS")
 message ("\n------------------------------------------\n")
-
-
-
 

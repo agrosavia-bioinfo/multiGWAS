@@ -5,7 +5,7 @@ message ("DEBUG = ", DEBUG, "\n")
 options (width=300, error=traceback)
 if (DEBUG) {SILENT <- FALSE;options (warn=2)}
 
-# Get enviornment GWAS variable 
+# Get environment GWAS variable 
 HOME   <<- Sys.getenv ("MULTIGWAS_HOME")
 OUTDIR <- getwd()
 params <- list ()
@@ -26,6 +26,46 @@ usageInstructions <- function () {
 	USAGE="USAGE: multiGWAS <config file>"
 	return (USAGE)
 }
+
+#-------------------------------------------------------------
+# Main for multi traits
+#-------------------------------------------------------------
+main <- function () {
+	source (paste0 (HOME, "/main/gwas-lib.R"))             # Module with shesis functions
+
+	msg ("MultiGWAS 1.0")
+	msg ("Working dir: ", getwd())
+	args = commandArgs(trailingOnly = TRUE)
+	
+	if (length (args) < 1) 
+		stop (usageInstructions())
+
+	# Check dependencies
+	checkDependencies (params)
+
+	# Process config file and run multiGWAS
+	msg ("Processing config file...")
+	initGlobalEnvironment ()
+
+	configFile = args [1]
+	if (file.exists (configFile)==F) 
+		stop ("Configuration file not found")
+
+	# Read and check config file arguments
+	msg ("Reading configuration file...")
+	params     = readCheckConfigParameters (configFile)
+
+	# Create trait config files for each trait
+	traitConfigFilesList = createConfigFilesFor (params$phenotypeFile, params)
+
+	# Analyze each trait independiently
+	mainDir = getwd ()
+	for (traitConfigFile in traitConfigFilesList) {
+		setwd (mainDir)
+		mainSingleTrait (traitConfigFile)
+	}
+}
+
 
 #-------------------------------------------------------------
 # Used to run in parallel the other functions
@@ -73,7 +113,7 @@ mainSingleTrait <- function (traitParamsFile) {
 	# Read, filter, and check phenotype and genotype
 	msg ("Preprocessing genomic data (Filtering and Formating data)...")
 
-	data <- genoPhenoMapProcessing (params$genotypeFile, params$genotypeFormat,
+  	data <- genoPhenoMapProcessing (params$genotypeFile, params$genotypeFormat,
 									params$phenotypeFile, params$mapFile)
 	params$trait           <<- data$trait
 	params$genotypeNumFile <<- data$genotypeNumFile
@@ -94,45 +134,6 @@ mainSingleTrait <- function (traitParamsFile) {
 	# Move out files to output dir
 	msg ("Moving files to output folders...")
 	moveOutFiles (params$outputDir, params$reportDir, params)
-}
-
-#-------------------------------------------------------------
-# Main for multi traits
-#-------------------------------------------------------------
-main <- function () {
-	source (paste0 (HOME, "/main/gwas-lib.R"))             # Module with shesis functions
-
-	msg ("MultiGWAS 1.0")
-	msg ("Working dir: ", getwd())
-	args = commandArgs(trailingOnly = TRUE)
-
-	if (length (args) < 1) 
-		stop (usageInstructions())
-
-	# Check dependencies
-	checkDependencies (params)
-
-	# Process config file and run multiGWAS
-	msg ("Processing config file...")
-	initGlobalEnvironment ()
-
-	configFile = args [1]
-	if (file.exists (configFile)==F) 
-		stop ("Configuration file not found")
-
-	# Read and check config file arguments
-	msg ("Reading configuration file...")
-	params     = readCheckConfigParameters (configFile)
-
-	# Create trait config files for each trait
-	traitConfigFilesList = createConfigFilesFor (params$phenotypeFile, params)
-
-	# Analyze each trait independiently
-	mainDir = getwd ()
-	for (traitConfigFile in traitConfigFilesList) {
-		setwd (mainDir)
-		mainSingleTrait (traitConfigFile)
-	}
 }
 
 #-------------------------------------------------------------
@@ -462,35 +463,35 @@ genoPhenoMapProcessing <- function (genotypeFile, genotypeFormat, phenotypeFile,
 	msgmsg ("Checking valid markers...")
 	validGenotypeFile = filterByValidMarkers (genotypeFile, params$ploidy)
 
-	# Remove no polymorohic markers (MAF > 0.0) and Write chromosome info (map.tbl)
-	msgmsg ("Filtering no polymorohic markers (MAF > THRESHOLD) ...") 
-	maf             = filterByMAF (validGenotypeFile, params, params$thresholdMAF)
-	genotypeFile    = maf$genotypeFile
-	genotypeNumFile = maf$genotypeNumFile
-
 	if (params$filtering==FALSE) {
 		msg ("Without filters")
 	}else {
 		msg ("Using filters...")
 		msgmsg ("Filtering by missing markers and samples...")
-		genotypeFile  = filterByMissingMarkersAndSamples (genotypeFile, params$GENO, params$MIND) 
+		genotypeFile  = filterByMissingMarkersAndSamples (validGenotypeFile, params$GENO, params$MIND) 
 	}
 
 	# Filter by common markers, samples and remove duplicated and NA phenos
 	msgmsg ("Filtering by common markers and samples...")
-	common          = filterByCommonMarkersSamples (genotypeFile, phenotypeFile, genotypeNumFile)
+	common          = filterByCommonMarkersSamples (genotypeFile, phenotypeFile)
 	genotypeFile    = common$genotypeFile
-	genotypeNumFile = common$genotypeNumFile
-	#genotypeNumFile = ACGTToNumericGenotypeFormat (genotypeFile, params$ploidy)
 	phenotypeFile   = common$phenotypeFile
 	trait           = common$trait
 
+	# Remove no polymorohic markers (MAF > 0.0) and Write chromosome info (map.tbl)
+	msgmsg ("Filtering no polymorohic markers (MAF > THRESHOLD) ...") 
+	maf             = filterByMAF (common$genotypeFile, params, params$thresholdMAF)
+	genotypeFile    = maf$genotypeFile
+	genotypeNumFile = maf$genotypeNumFile
+	nMarkers        = maf$nMarkers
+	nSamples        = maf$nSamples
+
 	# Print info trait, N samples
 	msgmsg("Evaluating following trait: ", trait) 
-	nSamples = ncol (common$genotype)
-	msgmsg ("N =",nSamples,"individuals with phenotypic and genotypic information \n")
+	msgmsg ("Phenotypic and genotypic information for N=", nSamples," individuals and M=", nMarkers, " markers." )
 
-	return (list (genotypeFile=genotypeFile, phenotypeFile=phenotypeFile, trait=common$trait, genotypeNumFile=genotypeNumFile))
+	return (list (genotypeFile=genotypeFile, phenotypeFile=phenotypeFile, 
+				  trait=common$trait, genotypeNumFile=genotypeNumFile))
 }
 
 #-------------------------------------------------------------
@@ -706,6 +707,8 @@ filterByMAF <- function(genotypeFile, params, thresholdMAF) {
 	geno         = outNum$geno
 	numericGeno  = outNum$genoNum
 	map          = outNum$map
+	nMarkers     = nrow (geno)
+	nSamples     = ncol (geno[,-1:-3])
 
 	# Get only genotypes without mapping
 	numericMatrixM = t(numericGeno[,-c(1:3)])
@@ -747,7 +750,8 @@ filterByMAF <- function(genotypeFile, params, thresholdMAF) {
 	genotypeNumFile        = addLabel (genotypeFile, "MAF-NUM")  
 	write.csv (numericGeno, genotypeNumFile, quote=F, row.names=F)
 							  
-	return (list (genotypeFile=genoMAFFile, geno=genoMAF, genotypeNumFile=genotypeNumFile))
+	return (list (genotypeFile=genoMAFFile, geno=genoMAF, genotypeNumFile=genotypeNumFile, 
+				  nMarkers=nMarkers, nSamples=nSamples))
 }
 
 #----------------------------------------------------------

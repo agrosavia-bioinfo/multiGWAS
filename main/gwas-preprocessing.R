@@ -27,13 +27,14 @@ main <- function ()
 	args = commandArgs (trailingOnly=T)
 
 	genotypeFile = args [1]
-	convertVCFToACGTByNGSEP (genotypeFile) 
+	ACGTToNumericGenotypeFormat (genotypeFile, 4)
+
+	#convertVCFToACGTByNGSEP (genotypeFile) 
 
 	#convertVCFToGenodiveFormat (genotypeFile)
 	#numericTetraToNumericDiploGSMatrix (genotypeFile)
 	#convertAABBGWASpolyToNumericFormat (inputFilename)
 	#gwaspTetraToDiploGenotype (genotypeFile)
-	#ACGTToNumericGenotypeFormat (genotypeFile, 4)
 	#getCommonGenoPhenoMap (args[1], args[2])
 	#createGwaspolyGenotype (args [1], args [2], 4)
 	#convertFitpolyToKMatrix (args [1])
@@ -53,12 +54,9 @@ main <- function ()
 #-------------------------------------------------------------
 # Get common sample names
 #-------------------------------------------------------------
-filterByCommonMarkersSamples <- function (genotypeFile, phenotypeFile, genotypeNumFile) {
+filterByCommonMarkersSamples <- function (genotypeFile, phenotypeFile) {
 	geno     = read.csv (file=genotypeFile, check.names=F)
-	genoNum  = read.csv (file=genotypeNumFile, check.names=F)
 	pheno    = read.csv (file=phenotypeFile, check.names=F)
-
-	rownames (genoNum) = genoNum [,1]
 
 	# From phenotype, remove duplicated and NA samples
 	pheno  = pheno [!is.na(pheno[,2]),]
@@ -72,23 +70,19 @@ filterByCommonMarkersSamples <- function (genotypeFile, phenotypeFile, genotypeN
 	phenoSamples  = pheno [,1] 
 	commonSamples = intersect (genoSamples, phenoSamples) 
 	commonMarkers = as.character(geno [,1])
-	genoNumCommon  = genoNum  [commonMarkers, ]
 
 	# Create new geno, pheno
 	genoCommon     = geno  [,c (colnames(geno)[1:3], commonSamples)]
-	genoNumCommon  = genoNum  [commonMarkers, c(colnames(genoNum)[1:3], commonSamples)]
 	phenoCommon    = pheno [pheno[,1] %in% commonSamples,]
 	trait          = colnames(phenoCommon)[2]
 
 	genoCommonFile     = addLabel (genotypeFile, "COMMON")
-	genoNumCommonFile  = addLabel (genotypeNumFile, "COMMON")
 	phenoCommonFile    = addLabel (phenotypeFile, "COMMON")
 
 	write.csv (file=genoCommonFile, genoCommon, quote=F, row.names=F)
-	write.csv (file=genoNumCommonFile, genoNumCommon, quote=F, row.names=F)
 	write.csv (file=phenoCommonFile, phenoCommon, quote=F, row.names=F)
 
-	return (list (genotypeFile=genoCommonFile, genotypeNumFile=genoNumCommonFile, phenotypeFile=phenoCommonFile, trait=trait, genotype=genoCommon))
+	return (list (genotypeFile=genoCommonFile, phenotypeFile=phenoCommonFile, trait=trait, genotype=genoCommon))
 }
 
 
@@ -206,7 +200,7 @@ imputeNumericMatrix <- function (numericMatrix) {
 		return(x)
 	}
 	matImputed <- t(apply(numericMatrix[,-1], 1, impute.mode))
-	matImputed = data.frame (numericMatrix[,1,drop=F], matImputed)
+	matImputed = data.frame (numericMatrix[,1,drop=F], matImputed, check.names=F)
 	return (matImputed)
 }
 
@@ -217,7 +211,7 @@ gwaspolyToGapitFormat <- function (genotypeFile, phenotypeFile, geneAction, FILE
 {
 	# Convert phenotype
 	pheno      = read.csv (phenotypeFile, check.names=F)
-	phenoGapit = data.frame (taxa=pheno[,1], pheno [,2, drop=F])
+	phenoGapit = data.frame (taxa=pheno[,1], pheno [,2, drop=F], check.names=F)
 
 	# Convert genotype to numeric
 	num     = ACGTToNumericGenotypeFormat (genotypeFile, 4, MAP=T) 
@@ -238,7 +232,7 @@ gwaspolyToGapitFormat <- function (genotypeFile, phenotypeFile, geneAction, FILE
 	# Convert to diplo
 	genoNumDiplo = numericTetraToNumericDiploMatrix (genoNumTetraImputed)
 	genoNumGapit = t (genoNumDiplo[,-1])
-	genoNumGapit = data.frame (taxa=colnames (genoNumDiplo[,-1]), genoNumGapit)
+	genoNumGapit = data.frame (taxa=colnames (genoNumDiplo[,-1]), genoNumGapit, check.names=F)
 
 	# Convert genotype for additive or dominant geneAction
 	# Under the dominant model, both types of homozygous genotypes 
@@ -252,7 +246,7 @@ gwaspolyToGapitFormat <- function (genotypeFile, phenotypeFile, geneAction, FILE
 		genoNumGapitValues [genoNumGapitValues==2] = 0
 		#genoNumGapitValues [genoNumGapitValues==1] = 1
 		#genoNumGapitValues [genoNumGapitValues==2] = 0
-		genoNumGapit = data.frame (genoNumGapit [,1,drop=F], genoNumGapitValues)
+		genoNumGapit = data.frame (genoNumGapit [,1,drop=F], genoNumGapitValues, check.names=F)
 		gapitNumFile = addLabel (genotypeFile, "GAPIT-NUM-DOM")
 		write.csv (genoNumGapit, gapitNumFile, quote=F, row.names=F)
 	}else if (geneAction=="dominantAll") {
@@ -260,7 +254,7 @@ gwaspolyToGapitFormat <- function (genotypeFile, phenotypeFile, geneAction, FILE
 
 		# 0,2 -> 0, 1->1
 		genoNumGapitValues [genoNumGapitValues==2] = 0
-		genoNumGapit = data.frame (genoNumGapit [,1,drop=F], genoNumGapitValues)
+		genoNumGapit = data.frame (genoNumGapit [,1,drop=F], genoNumGapitValues, check.names=F)
 		gapitNumFile = addLabel (genotypeFile, "GAPIT-NUM-HET")
 		write.csv (genoNumGapit, gapitNumFile, quote=F, row.names=F)
 
@@ -268,7 +262,7 @@ gwaspolyToGapitFormat <- function (genotypeFile, phenotypeFile, geneAction, FILE
 		genoNumGapitValues [genoNumGapitValues==0] = 2
 		genoNumGapitValues [genoNumGapitValues==1] = 0
 		genoNumGapitValues [genoNumGapitValues==2] = 1
-		genoNumGapit = data.frame (genoNumGapit [,1,drop=F], genoNumGapitValues)
+		genoNumGapit = data.frame (genoNumGapit [,1,drop=F], genoNumGapitValues, check.names=F)
 		gapitNumFile = addLabel (genotypeFile, "GAPIT-NUM-HOM")
 		write.csv (genoNumGapit, gapitNumFile, quote=F, row.names=F)
 
@@ -276,14 +270,14 @@ gwaspolyToGapitFormat <- function (genotypeFile, phenotypeFile, geneAction, FILE
 		# 0,1 -> 0, 2 -> 1
 		genoNumGapitValues [genoNumGapitValues==2] = 1
 		genoNumGapitValues [genoNumGapitValues==1] = 0
-		genoNumGapit = data.frame (genoNumGapit [,1,drop=F], genoNumGapitValues)
+		genoNumGapit = data.frame (genoNumGapit [,1,drop=F], genoNumGapitValues, check.names=F)
 		gapitNumFile = addLabel (genotypeFile, "GAPIT-NUM-DOM")
 		write.csv (genoNumGapit, gapitNumFile, quote=F, row.names=F)
 
 		# Recessive: AA (0) and Aa(1) to 0, aa (2) to 1
 		# 0 -> 0, 1,2 -> 1
 		genoNumGapitValues [genoNumGapitValues==2] = 1
-		genoNumGapit = data.frame (genoNumGapit [,1,drop=F], genoNumGapitValues)
+		genoNumGapit = data.frame (genoNumGapit [,1,drop=F], genoNumGapitValues, check.names=F)
 		gapitNumFile = addLabel (genotypeFile, "GAPIT-NUM-REC")
 	}
 
@@ -395,6 +389,9 @@ convertVCFToACGTByNGSEP <- function (filename, outFilename="")
 	cmm=sprintf ("java -jar %s/opt/tools/MultiGWAS_NGSEP.jar VCFConverter -GWASPoly -i %s -o %s", HOME, filename, stemName)
 	runCommand (cmm, "log-NGSEP.log")
 	outFilename = paste0 (stemName, "_GWASPoly.csv") # Added by NGSEP tool
+	geno = read.csv (outFilename, check.names=F)
+	geno = arrange (geno, Chrom, Position)
+	write.csv (geno, outFilename, quote=F, row.names=F)
 	return (outFilename)
 }
 
@@ -828,42 +825,6 @@ impute.mode <- function(x) {
 	}
 	return(x)
 }
-#----------------------------------------------------------
-# Transform table genotype to SHEsis genotype format
-#----------------------------------------------------------
-old_gwaspToShesisGenoPheno <- function (genotypeFile, phenotypeFile, ploidy) 
-{
-	msgmsg ("    >>>> Writting gwasp to shesis genopheno...")
-	sep <- function (allele) {
-		s="";
-		for (i in 1:ploidy) s=paste0(s, substr (allele,start=i,stop=i)," ");
-		#s = paste (strsplit (allele, "")[[1]], collapse=" ")
-		return (s)
-	}
-	geno    <<- read.csv (file=genotypeFile, stringsAsFactors=F, check.names=F)
-	pheno   <<- read.csv (file=phenotypeFile, stringsAsFactors=F, check.names=F)
-	rownames (pheno) <- pheno [,1]
-	map        <- geno  [,c(1,2,3)]    # Get SNP, Cromosome, Position
-	rownames (geno)  <- map [,1] 
-
-	alleles    <- geno[,-c(1,2,3)]
-	alleles [is.na(alleles)] = paste (rep ("0", ploidy), collapse="") # NAs as "00" or "0000"
-
-	allelesMat <- t(sapply (alleles, sep))
-
-	samples         = rownames (allelesMat)
-	pheno           = pheno [samples,]
-	pheno [,2]      = impute.mode (pheno [,2])
-	genoPhenoShesis = data.frame (Sample=pheno[,1], Trait=pheno[,2],  allelesMat)
-
-	msgmsg ("    >>>> Writing shesis genopheno...")
-	outFile = "out/filtered-shesis-genopheno.tbl"
-	write.table (file=outFile, genoPhenoShesis, quote=F,row.names=F,col.names=F, sep="\t")
-
-	msgmsg ("    >>>> Writing shesis marker names...")
-	outFile = "out/filtered-shesis-markernames.tbl"
-	write.table (file=outFile, map[,1], quote=F,row.names=F,col.names=F, sep="\t")
-}
 
 #----------------------------------------------------------
 # Add tabs to alleels changign AG --> A	G
@@ -972,8 +933,9 @@ ACGTToNumericGenotypeFormat <- function (genotypeFile, ploidy, MAP=F)
 	rownames(markers) = geno[,1]
 
 	tmp     <- apply(markers,1,getReferenceAllele)
-	map     <- data.frame(Marker=geno[,1],Chrom=factor(geno[,2],ordered=T),Position=geno[,3], Ref=tmp[1,], Alt=tmp[2,], stringsAsFactors=F)
-	write.table (map, "out/map.tbl", sep="\t")
+	map     <- data.frame(Marker=geno[,1],Chrom=factor(geno[,2],ordered=T),Position=geno[,3], 
+						  Ref=tmp[1,], Alt=tmp[2,], stringsAsFactors=F)
+	write.csv (map, "out/map.csv", quote=F, row.names=F)
 	map$Ref <- tmp[1,]
 	map$Alt <- tmp[2,]
 
@@ -1089,7 +1051,7 @@ numericTetraToNumericDiploMatrix <- function (tetraMatrix) {
 	diploMatrix <- t (apply (tetraMatrix, 1, toDiplo))
 	colnames (diploMatrix) = colnames (tetraMatrix [-1])
 	rownames (diploMatrix) = rownames (tetraMatrix)
-	return (data.frame (tetraMatrix[,1, drop=F], diploMatrix))
+	return (data.frame (tetraMatrix[,1, drop=F], diploMatrix, check.names=F))
 }
 
 numericToABGenotypeFormat <- function (genotypeFile) 
