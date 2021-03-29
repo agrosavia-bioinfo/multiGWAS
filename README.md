@@ -1,16 +1,14 @@
 Table of Contents
 =================
 <!--ts-->
-   * [Installation](#installation)
-      * [General steps to install multiGWAS on a Linux system](#general-steps-to-install-multigwas-on-a-linux-system)
-      * [Specific instructions to install multiGWAS on a Linux Ubuntu](#specific-instructions-to-install-multigwas-on-a-linux-ubuntu)
-         * [Install external software](#install-external-software)
-         * [Install MultiGWAS tool](#install-multigwas-tool)
+   * [MultiGWAS Installation](#multigwas-installation)
+      * [Installation from sources](#installation-from-sources)
+      * [Installaton from Ubuntu 20.04 precompiled version](#installaton-from-ubuntu-2004-precompiled-version)
    * [Running MultiGWAS](#running-multigwas)
-      * [Using the command line interface](#using-the-command-line-interface)
-      * [Using the graphical user interface:](#using-the-graphical-user-interface)
+      * [Observations](#observations)
+      * [Using the command line interface (CLI interface):](#using-the-command-line-interface-cli-interface)
+      * [Using the graphical user interface (GUI interface):](#using-the-graphical-user-interface-gui-interface)
    * [Running the examples](#running-the-examples)
-   * [General usage](#general-usage)
    * [Configuration file](#configuration-file)
       * [Example of a configuration file](#example-of-a-configuration-file)
       * [Genomic data inputs](#genomic-data-inputs)
@@ -22,18 +20,16 @@ Table of Contents
       * [Implementation](#implementation)
       * [Number of SNPs in Manhattan and QQ plots](#number-of-snps-in-manhattan-and-qq-plots)
       * [Correction for multiple testing](#correction-for-multiple-testing)
-
 <!--te-->
 
 # MultiGWAS Installation 
 ## Installation from sources
-MultiGWAS can be installed from scratch on a Linux system (tested on Ubuntu 20.04). by following these instructions: 
+To install MultiGWAS from source on a Linux system (tested on Ubuntu 20.04), follow the instructions below: 
+
 ```
 1. Open a linux console (or terminal)
 2. If not installed, install R (R>=3.6), Java, and git
-    sudo apt install r-base-core 
-    sudo apt install default-jre
-    sudo apt install git
+    sudo apt install r-base-core default-jre git
 3. Download or clone the MultiGWAS repository 
     git clone https://github.com/agrosavia-bioinfo/multiGWAS.git
 4. Change to install directory:
@@ -42,121 +38,84 @@ MultiGWAS can be installed from scratch on a Linux system (tested on Ubuntu 20.0
     sh install-linux-packages.sh
 6. Execute the R script to install the necessary R libraries:
     Rscript install-R-libraries.R
-7. Reload bashrc configuration file:
+7. Open a new terminal or load the new configuration by typing:
     source ~/.bashrc
+8. Test MultiGWAS command line interface by tiping:
+    multigwas 
+9. Test MultiGWAS command line interface by tiping:
+    jmultigwas
 ```
 ## Installaton from Ubuntu 20.04 precompiled version 
-
-
-
-
-We describe here the [MultiGWAS](https://github.com/agrosavia-bionformatics/multiGWAS) installation that contains the file sources and binaries to run the MultiGWAS tool. It includes:
-  - MultiGWAS tool sources (R code, Java application,  and binary bash scripts)
-  - MultiGWAS precompiled R libraries for Linux systems (tested on Ubuntu 18.04) 
-  - Binaries and Java classes for the four GWAS packages  GWASpoly, SHEsis, TASSEL, and PLINK (r1.9 and r2.0)
-  
-## General steps to install multiGWAS on a Linux system
-  1. Install pandoc markup converter, if not installed. 
-  2. Install git tool to clone github repository, if not installed.
-  3. Install Oracle Java runtime, if not installed.
-  4. Install R 3.6, if not installed. 
-  5. Clone the multiGWAS repository
-  6. Execute the multiGWAS installer:
-
-## Specific instructions to install multiGWAS on a Linux Ubuntu
-### Install external software
-The MultiGWAS tool currently runs on Linux systems (tested on Ubuntu Linux 18.04 LTS, x86_64 GNU / Linux), and requires the following software to be installed:
-  - Install git tool and pandoc markup converter: 
-```
-    sudo apt install git pandoc
-```
-  - R 3.6 or higher. If not installed see https://cran.r-project.org/bin/linux/ubuntu/README.html or Open a Linux console and enter the following instructions for Ubuntu 18.04 (bionic):
-```
-    sudo apt install add-apt-key software-properties-common git
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB6517
-    sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/'16619E084DAB9
-    sudo apt update
-    sudo apt install r-base
-```
-  - Oracle Java JRE 8.x or higher. If not installed see https://computingforgeeks.com/install-oracle-java-openjdk-14-on-ubuntu-debian-linux/ or Open a Linux console (or terminal) and enter the following instructions for Ubuntu 18.04 (bionic):
-```
-   sudo add-apt-repository ppa:linuxuprising/java
-   sudo apt update
-   sudo apt install oracle-java14-installer
-   sudo apt install oracle-java14-set-default
-``` 
-
-### Install MultiGWAS tool
-Open a Linux console (or terminal) and enter the following instructions:
-```
-# 1. Clone the MultiGWAS repository:
-    git clone https://github.com/agrosavia-bioinformatics/multiGWAS.git
-# 2. Change to the multiGWAS dir:
-    cd multiGWAS
-# 3. Execute the installer:
-    . INSTALL.SH         # dot space INSTALL.SH
-# 4. The MultiGWAS tool is ready to use.
-```
+To install MultiGWAS with both precompiled R libraries and Java runtime, follow the instructions at:
+[https://github.com/agrosavia-bioinfo/MultiGWASpre](https://github.com/agrosavia-bioinfo/MultiGWASpre).
 
 # Running MultiGWAS 
-MultiGWAS can be run from any directory by calling a command line interface (CLI) developed in R or a graphical user interface (GUI) developed in Java (see below). In both, users have to open a terminal and run either the CLI script "multigwas.R" plus the configuration file or the GUI script "jmultigwas". Detailed instruction are given below.
+MultiGWAS can be run from any directory by calling either command "multigwas" or "jmultigwas". The former to run the command line interface (CLI) developed in R, and the latter to run the graphical user interface (GUI) developed in Java (see below). In both, users have to open a terminal and type the respective command. The CLI command needs an additional configuration file as parameter, while the GUI command open a graphical application to specify ". Detailed instruction are given below.
 
-Note that MultiGWAS was developed in R but does not run from the R interface as it integrates four GWAS software (GWASpoly, SHEsis, GAPIT and TASSEL) implemented in different languages.
+## Observations
+  - MultiGWAS can be run from any directory (known as the working directory). For the CLI interface ("multigwas"), it only needs that the configuration file will be copied or created into the working directory (see below). For the GUI interface, the configuration file will be created interactively an saved into the working directory. In both interfaces, results are saved into the working directory. 
+  - Genomic files specified in the configuration file (genotype, phenotype, and map files) can be located in any directory, but if they are not located in the working directory, they have to be specified with the full path where they are located.
+  - MultiGWAS does not run from the R interface, althouth it was developed in R, as it integrates four GWAS software (GWASpoly, SHEsis, GAPIT and TASSEL) implemented in different languages. 
 
-## Using the command line interface
+
+## Using the command line interface (CLI interface):
   - Open a Linux console
   - Create a new directory or change to an existing one (working directory, e.g. test)
-  - Create a new configuration file or use an existing one (e.g. test.config, see below)
+  - Create a new configuration file or copy an existing one (e.g. test.config, see below)
   - Run the CLI MultiGWAS script followed by the name of the configuration file:
       ```
-      multigwas.R test.config
+      multigwas test.config
       ```
   - Open a file browser and view the results saved into the working directory. They include:
      - Full html report (with the same name as the analyzed trait)
      - Original graphics and tables generated by MultiGWAS.
      - Preprocessed tables with the GWAS results from the four GWAS packages
      
-## Using the graphical user interface:
-  - Open a linux console and execute the following script: 
-       ```
-       jmultiGWAS
-       ```
-	![MultiGWAS Gui](multiGWAS-gui.png)
+## Using the graphical user interface (GUI interface):
    - The GUI application is easy and straighforward. It includes four views:
       - Inputs view:  to create the configuration file and start the execution of MultiGWAS
       - Outputs view: to view the logs/messages from the current execution
       - Results view: to view a preview of the HTML report.
       - Files view:   to explore and open the results, including the original tables, graphics, and the full HTML report.
+  - To run the application, open a linux console and execute the command: 
+       ```
+       jmultiGWAS
+       ```
+  - The following GUI will be displayed with the input view ready to create the configuration file:
+
+	![MultiGWAS Gui](multiGWAS-gui.png)
+  - Set configuration parameters:
+    - In the **GWAS tools** panel: Choose the tools to run for the analysis.
+    - In the **Gene actions model** panel: Choose the gene action model to run for each GWAS tool.
+    - In the **Input/Output** panel: Choose the working directory, the genotype, and phenotype files. 
+    - In the **Genotype information** panel: Choose the genotype format and if it does not contain chromosome information, choose the file with this information (map file). Additionally, if the genotype is for a non-model organism, set the number of chromosomes to show in results (see below for detailed information of available genotype formats and mapfile structure).
+    - In the **GWAS Parameters** panel: Choose the parameter for GWAS analysis to be applied to the selected GWAS tools (see below) and select whether to apply quality filter to the genomic data or not (see below).
+    - In the **Quality Control Filters** panel: Choose the different filters to apply to genomic data and set their values or leave the default values.
+
+  - Run MultiGWAS: After all configuration parameters are specified, clicking the **Run** button will start the MultiGWAS analysis. Messages from the analysis will be shown in the **Outputs** tab, and at the end it will show a link to the report generated by MultiGWAS (an html file). Clicking on this link will open a browser showing the html report.
 
 # Running the examples
-The multiGWAS directory contains an "example" subfolder with genomic data ("example-genotype.tbl" and "example-phenotype.tbl" files) and two ready-to-use configuration files ("full.config" and "naive.config" files for **Naive** and **Full** GWAS analysis, respectively). Both genotype and phenotype come from the Solanaceae Coordinated Agricultural Project (SolCAP) potato diversity panel described in the paper. 
+The multiGWAS directory contains an ***examples*** directory with several examples, one for each genotype format. For each example there is a subdirectory named as the genotype format, each containing all the needed files to run the example, including: the configuration file, phenotype and genotype files, and the map file with chromosome information and reference/alternate alleles, for genotypes formats that does not include this information (see below).
 
-To run a Full GWAS analysis with the multiGWAS tool, follow the next steps:
- - Open a Linux terminal
- - Change to the "multiGWAS" directory
- - Change to the "example" subfolder
- - Execute the **multiGWAS tool** using as argument the configuration file "full.config":
-  ```
-        multiGWAS full.config 
-  ```
- - An output directory will be created named as "out-XXXX" where XXXX is the prefix of the configuration filename. For the above example, an "out-full" subfolder will be created with the following files and subfolders:
-    - A "multiGWAS-report.html" file in HTML format with the full report from the multiGWAS results.
-    - A "report" subfolder with the resulting tables and graphics included in the previous report file.
-    - An "out" subfolder that contains temporary files created by multiGWAS and the other GWAS tools.
-    - A "logs" subfolder that contains the log outputs from the different tools.
+To run an examples, follow the instructions below:
+```
+1. Open a terminal and change to the MultiGWAS directory:
+   cd multiGWAS
+2. Change to ***examples*** directory: 
+   cd examples
+3. Change to the specific example subdirectoy (e.g. "gwaspoly-format")
+   cd gwaspoly-format
+4. Run MultiGWAS with the configuration file  (e.g. "configuration-gwaspoly-format-Full-Filters.config")
+   multigwas configuration-gwaspoly-format-Full-Filters.config
+5. Open the system file manager and browse the MultiGWAS report (html file) saved on the working directory.
+```
+
+For each MultiGWAS execution, an output directory will be created named as "out-XXXX" where XXXX is the prefix of the configuration filename. The output directory contains:
+  - A file in HTML format with the full report from MultiGWAS results.
+  - A "report" subfolder with the resulting tables and graphics included in the previous report file.
+  - An "out" subfolder containing temporary files created by MultiGWAS and the other GWAS tools.
+  - A "logs" subfolder containing the log outputs from the different tools.
     
-# General usage
-  - Create a new directory (e.g. "test" directory).
-  - Copy the phenotype and genotype files to new directory (see data formats below)
-  - Create a configuration file (e.g. test.config) and copy it to the new directory (see configuration file below)
-  - Open a Linux terminal
-  - Change to the new directory
-  - Execute the multiGWAS tool using as argument the configuration file
-```
-      multiGWAS test.config
-```
-  - Results will be saved in the "out-test" directory
-
 # Configuration file
 The configuration file is a text file with a list of parameter names and their values separated by a colon (":"). This file is the main input for MultiGWAS and it can be created in three ways: using a general text editor, using the MultiGWAS GUI interface, or modifying an existing configuration file. 
 
