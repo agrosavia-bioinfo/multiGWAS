@@ -11,7 +11,7 @@ Table of Contents
    * [Running the examples](#running-the-examples)
    * [Configuration file](#configuration-file)
       * [Example of a configuration file](#example-of-a-configuration-file)
-      * [Genomic data inputs](#genomic-data-inputs)
+      * [Genomic data and formats](#genomic-data-and-formats)
          * ["genotypeFile"](#genotypefile)
          * ["genotypeFormat"](#genotypeformat)
          * ["phenotypeFile"](#phenotypefile)
@@ -49,8 +49,13 @@ To install MultiGWAS from source on a Linux system (tested on Ubuntu 20.04), fol
 To install MultiGWAS with both precompiled R libraries and Java runtime, follow the instructions at:
 [https://github.com/agrosavia-bioinfo/MultiGWASpre](https://github.com/agrosavia-bioinfo/MultiGWASpre).
 
+## Ready-to-use installations: virtual machine and container
+MultiGWAS can be tested on any platform (Linux, OS X, Windows) by using either a VirtualBox virtual machine or a Docker container. In both, MultiGWAS has been installed with all its dependencies (Linux, R, R libraries, and Java). Both solutions are described at:
+[https://github.com/agrosavia-bioinfo/MultiGWAS-vm](https://github.com/agrosavia-bioinfo/MultiGWAS-vm).
+
+
 # Running MultiGWAS 
-MultiGWAS can be run from any directory by calling either command "multigwas" or "jmultigwas". The former to run the command line interface (CLI) developed in R, and the latter to run the graphical user interface (GUI) developed in Java (see below). In both, users have to open a terminal and type the respective command. The CLI command needs an additional configuration file as parameter, while the GUI command open a graphical application to specify ". Detailed instruction are given below.
+MultiGWAS can be run from any directory by calling either command "multigwas" or "jmultigwas". The former to run the command line interface (CLI) developed in R, and the latter to run the graphical user interface (GUI) developed in Java (see below). In both, users have to open a terminal and type the respective command. The CLI command needs an additional configuration file as parameter, while the GUI command open a graphical application to specify ". Detailed instructions are given below.
 
 ## Observations
   - MultiGWAS can be run from any directory (known as the working directory). For the CLI interface ("multigwas"), it only needs that the configuration file will be copied or created into the working directory (see below). For the GUI interface, the configuration file will be created interactively an saved into the working directory. In both interfaces, results are saved into the working directory. 
@@ -124,50 +129,65 @@ Upper / lower case is relevant for the filenames. Blank lines and comment lines 
 
 Now, we briefly describe these parametes and then we show an example of a config file.
 
-|  Parameter name   | Description |                     
-|------------------ |------------  |                   
-| genotypeFile      | Genotype filename, file with the marker data (see genomic data section below) |
-| genotypeFormat    | Genotype format, currently four formats: "gwaspoly", "kmatrix", "vcf", and "fitpoly" (see genomic data section below) |
-| phenotypeFile     | Phenotype filename, file with the individuals and trait values (see genomic data section below) |
-| mapFile           | Map file, optional file with marker information (marker, reference allele, alternate, allele, chromosome, and position (see genomic data section below) |
-| significanceLevel | The genome-wide significance threshold α (commonly 0.01 or 0.05)|
-| correctionMethod  | The method for multiple testing correction (”Bonferroni” or ”FDR”)|
-| gwasModel         | The type of GWAS analysis (”Naive” or ”Full”)|
-| nBest             | Number of top associations to be reported
-| filtering         | TRUE or FALSE whether to use quality control (QC) filters or not (see below) |
-| MAF               | Minor allele frequency QC filter |
-| MIND              | Individual missing rate QC filter |
-| GENO              | SNP missing rate QC filter |
-| HWE               | Hardy-Weinberg threshold QC filter|
-| tools             | Tools to be used in the analysis. Any combination of the following tools: "GWASpoly", "TASSEL", "PLINK, and SHEsis
-| geneAction        | Gene-action assumed model (Marker-effect). Currently, four options: "additive", "general", "dominance", or "all" |
+|  Parameter name     | Description |                     
+|------------------   |------------  |                   
+| genotypeFile        | Genotype filename, file with the marker data (see genomic data section below) |
+| phenotypeFile       | Phenotype filename, file with the individuals and trait values (see genomic data section below) |
+| genotypeFormat      | Genotype format, currently four formats: "gwaspoly", "matrix", "vcf", "updog" and "fitpoly" (see genomic data section below) |
+| mapFile             | Map file, optional file with marker information (marker, reference allele, alternate, allele, chromosome, and position (see genomic data section below) |
+| nonModelOrganism    | TRUE or FALSE if the data is for a non-model organism or not (see below). |
+| numberOfChromosomes | Number of chromosomes to show in results when the data is from a non-model organism |
+| significanceLevel   | The genome-wide significance threshold α (commonly 0.01 or 0.05)|
+| correctionMethod    | The method for multiple testing correction (”Bonferroni” or ”FDR”)|
+| geneAction          | Gene-action assumed model (Marker-effect). Currently, four options: "additive", "general", "dominance", or "all" |
+| gwasModel           | The type of GWAS analysis (”Naive” or ”Full”)|
+| filtering           | TRUE or FALSE whether to use quality control (QC) filters or not (see below) |
+| MAF                 | Minor allele frequency QC filter |
+| MIND                | Individual missing rate QC filter |
+| GENO                | SNP missing rate QC filter |
+| HWE                 | Hardy-Weinberg threshold QC filter|
+| R2                  | User-defined squared correlation threshold (R²) above which a pair of SNPs is considered to be in linkage disequilibrium |
+| tools               | Tools to be used in the analysis. Any combination of the following tools: "GWASpoly", "SHEsis", "GAPIT, and TASSEL
+| nBest               | Number of top associations to be reported
 
 ## Example of a configuration file
 This is the contents of a typical configuration file named as "full-tetra.config":
 ```
-genotypeFile         : example-genotype.tbl
-phenotypeFile        : example-phenotype.tbl
-mapFile              : 
-genotypeFormat       : gwaspoly
-significanceLevel    : 0.05
-correctionMethod     : Bonferroni
-gwasModel            : Naive
-nBest                : 10
-filtering            : TRUE
-MAF                  : 0.01
-M IND                 : 0.1
-GENO                 : 0.1
-HWE                  : 1e-10
-tools                : GWASpoly SHEsis PLINK TASSEL
-geneAction           : additive
+# Files
+genotypeFile        : genotype-gwaspoly-format-example.csv
+phenotypeFile       : phenotype-tuber_shape-example.csv
+genotypeFormat      : gwaspoly
+mapFile             : NULL
+nonModelOrganism    : FALSE
+numberOfChromosomes :
+
+# GWAS model
+ploidy              : 4
+significanceLevel   : 0.05
+correctionMethod    : Bonferroni    
+gwasModel           : Full
+geneAction          : additive
+R2                  : 0.9 
+
+# Quality control
+filtering           : TRUE
+MAF                 : 0.01
+MIND                : 0.1 
+GENO                : 0.1 
+HWE                 : 1e-10 
+
+# Tools
+tools               : GWASpoly SHEsis GAPIT TASSEL
+nBest               : 10
+
 ```
-## Genomic data inputs
+## Genomic data and formats
 The following parameters from configuration file are related with the type of genomic data required by MultiGWAS. Below, we show the characteristics and structure of the input files. Keep in mind that the headeer line must be present in all the file formats we show below.
 ### "genotypeFile"
 It specifies the filename for the genotype data. (see below the accepted genotype formats).
 
 ### "genotypeFormat"
-Currently, MultiGWAS accepts five genotype formats: "gwaspoly", "kmatrix", "vcf", "fitpoly", and "updog":
+Currently, MultiGWAS accepts five genotype formats: "gwaspoly", "matrix", "vcf", "fitpoly", and "updog":
 - ***"gwaspoly" format:*** table with comma separated values (.csv). Each row contains the marker id, the chromosome, the position in the chromosome, and the following columns correspond to the marker data for each individual codified in the "ACGT" format (e.g., AATT, CCGG, AAAT, GGCG). An example follows:
 ```	 
 | Marker   | Chrom | Position | ACBrador | ACLPI175395 | ADGPI195204 | AdirondackBlue |
@@ -177,7 +197,7 @@ Currently, MultiGWAS accepts five genotype formats: "gwaspoly", "kmatrix", "vcf"
 | c2_21332 | 0     | 3499519  | TTCC     | CCCC        | CCCC        | TTCC           |
 ```
 
-- ***"kmatrix" format:*** table with comma separated values (.csv). Each ro contains the marker id and the marker data for each individual codified in a numeric format (e.g. 0,1,2,3,4). An example follows:
+- ***"matrix" format:*** table with comma separated values (.csv). Each ro contains the marker id and the marker data for each individual codified in a numeric format (e.g. 0,1,2,3,4). An example follows:
  
 ```
 | Marker   | ACBrador | ACLPI175395 | ADGPI195204 | AdirondackBlue | 
@@ -239,7 +259,7 @@ The phenotype file is formatted as a table separated by commas with the names of
 ```
 
 ### "mapFile"
-This file contains the markers information and it is an an *optional* file only needed when the genotype is numeric, as in the case of  "kmatrix" and "fitpoly" formats. The file contains a table with separated column values (.csv) with the following information for each marker: marker name, reference allele, alternate allele, chromosome, and position in the chromosome. An example follows:
+This file contains the markers information and it is an an *optional* file only needed when the genotype is numeric, as in the case of  "matrix" and "fitpoly" formats. The file contains a table with separated column values (.csv) with the following information for each marker: marker name, reference allele, alternate allele, chromosome, and position in the chromosome. An example follows:
 ```
 | Markers  | Ref | Alt | Chrom | Position |
 |----------|-----|-----|-------|----------|
@@ -253,7 +273,7 @@ This file contains the markers information and it is an an *optional* file only 
 
 # Considerations
 ## Implementation
-Most of the code uses the R language. However, some scripts that calling the GWAS tools are writing in bash. The version of the four tools are GWASpoly 1.3 (R library), SHEsis 1.0 (binary program), PLINK 1.9 and 2.0 (binary programs), and TASSEL 5.0 (Java packages). PLINK 1.9 is used for GWAS analysis (association between SNPs and quantitative traits), and PLINK 2.0 is used to account for cryptic relatedness (estimating kinship coefficientes).
+MultiGWAS is implemented in the R language.  However, some scripts that calling the GWAS tools are writing in bash. The version of the four tools are GWASpoly 1.3 (R library), SHEsis 1.0 (binary program), GAPIT 3.0, and TASSEL 5.0 (Java packages). 
 
 ## Number of SNPs in Manhattan and QQ plots
 The Manhattan and QQ plots for the different GWAS tools show a different number of markers (SNPs). Two reasons explain this pattern. First, the GWASpoly software uses four models for the marker effect (i.e., additive, general, simplex dominance, and duplex dominance). Therefore,  the plots show the SNPs four times, one for each model. Second, MultiGWAS is using scores instead of raw p-values, and scores are the -log10(p) results. So, when p-values are high, the scores have a negative value, and because the y-axes in the plot start in zero, they are not shown.

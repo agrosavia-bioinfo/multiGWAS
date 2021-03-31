@@ -1,6 +1,5 @@
 #!/usr/bin/Rscript
 DEBUG = F; SILENT=T
-message ("DEBUG = ", DEBUG, "\n")
 
 options (width=300, error=traceback)
 if (DEBUG) {SILENT <- FALSE;options (warn=2)}
@@ -15,15 +14,16 @@ params <- list ()
 # AUTHOR: Luis Garreta (lgarreta@agrosavia.co) 
 # DATE  : 12/feb/2020
 # LOGS  :   
-	# r1.8: Add linkage disequilibrium analysis
-	# r1.5: Using VCF files
-	# r1.3: Added column gene action model to tables of results by tool
+	# r1.0: Added genotype formats, LD, and HWE
+	# r0.8: Add linkage disequilibrium analysis
+	# r0.5: Using VCF files
+	# r0.3: Added column gene action model to tables of results by tool
 
 #-------------------------------------------------------------
 # Return string with usage instructions
 #-------------------------------------------------------------
 usageInstructions <- function () {
-	USAGE="USAGE: multiGWAS <config file>"
+	USAGE="USAGE: multigwas <config file>\n"
 	return (USAGE)
 }
 
@@ -31,14 +31,15 @@ usageInstructions <- function () {
 # Main for multi traits
 #-------------------------------------------------------------
 main <- function () {
-	source (paste0 (HOME, "/main/gwas-lib.R"))             # Module with shesis functions
+	source (paste0 (HOME, "/main/gwas-lib.R")) 
 
-	msg ("MultiGWAS 1.0")
-	msg ("Working dir: ", getwd())
+	message ("MultiGWAS 1.0 is running!\n")
 	args = commandArgs(trailingOnly = TRUE)
 	
-	if (length (args) < 1) 
-		stop (usageInstructions())
+	if (length (args) < 1) {
+		message (usageInstructions())
+		quit ()
+	}
 
 	# Check dependencies
 	checkDependencies (params)
@@ -95,7 +96,7 @@ runGWASTools <- function () {
 		msgmsg ("Running ", tool)
 
 	#listOfResultsFile     = mclapply (tools, runOneTool, params, mc.cores=NCORES, mc.silent=SILENT)
-	listOfResultsFile     = mclapply (tools, runOneTool, params, mc.cores=NCORES, mc.silent=F)
+	listOfResultsFile     = mclapply (tools, runOneTool, params, mc.cores=NCORES, mc.silent=SILENT)
 	listOfResultsFileBest = selectBestGeneActionModelAllTools (listOfResultsFile, params$geneAction, params$nBest)
 	listOfResultsFileLD   = runLinkageDisequilibriumAnalysis (listOfResultsFileBest, params$nBest, params$genotypeNumFile, params$R2)
 
