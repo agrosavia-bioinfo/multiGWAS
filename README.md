@@ -1,9 +1,14 @@
+
+# MultiGWAS
+MultiGWAS is a tool that does GWAS for diploid and tetraploid organisms by executing in parallel four GWAS software, two for polyploid data (GWASpoly and SHEsis) and two for diploids data (GAPIT and TASSEL). MultiGWAS has several advantages. It runs either in the command line or in an graphical interface; it manages different genotype formats, including VCF; it allows control for population structure and relatedness, along with several quality control checks on genotype data. Besides, MultiGWAS can test for each GWAS tool all its gene action models, and through a proprietary scoring function, select the best model to report its associations. Finally, it generates several reports that facilitate the identification of false associations from both the significant and the top association SNP among the four software.
+
 Table of Contents
 =================
 <!--ts-->
    * [MultiGWAS Installation](#multigwas-installation)
       * [Installation from sources](#installation-from-sources)
-      * [Installaton from Ubuntu 20.04 precompiled version](#installaton-from-ubuntu-2004-precompiled-version)
+      * [Installation from precompiled libraries (Ubuntu 20.04, R 3.6)](#installation-from-precompiled-libraries-ubuntu-2004-r-36)
+      * [Installation from ready-to-use virtual machine and docker container](#installation-from-ready-to-use-virtual-machine-and-docker-container)
    * [Running MultiGWAS](#running-multigwas)
       * [Observations](#observations)
       * [Using the command line interface (CLI interface):](#using-the-command-line-interface-cli-interface)
@@ -23,6 +28,8 @@ Table of Contents
 <!--te-->
 
 # MultiGWAS Installation 
+MultiGWAS offers different installations: from sources, precompiled versions, and ready-to-use virtual machine and docker image. Specific instructions are given below.
+
 ## Installation from sources
 To install MultiGWAS from source on a Linux system (tested on Ubuntu 20.04), follow the instructions below: 
 
@@ -45,11 +52,11 @@ To install MultiGWAS from source on a Linux system (tested on Ubuntu 20.04), fol
 9. Test MultiGWAS command line interface by tiping:
     jmultigwas
 ```
-## Installaton from Ubuntu 20.04 precompiled version 
+## Installation from precompiled libraries (Ubuntu 20.04, R 3.6) 
 To install MultiGWAS with both precompiled R libraries and Java runtime, follow the instructions at:
 [https://github.com/agrosavia-bioinfo/MultiGWASpre](https://github.com/agrosavia-bioinfo/MultiGWASpre).
 
-## Ready-to-use installations: virtual machine and container
+## Installation from ready-to-use virtual machine and docker container
 MultiGWAS can be tested on any platform (Linux, OS X, Windows) by using either a VirtualBox virtual machine or a Docker container. In both, MultiGWAS has been installed with all its dependencies (Linux, R, R libraries, and Java). Both solutions are described at:
 [https://github.com/agrosavia-bioinfo/MultiGWAS-vm](https://github.com/agrosavia-bioinfo/MultiGWAS-vm).
 
