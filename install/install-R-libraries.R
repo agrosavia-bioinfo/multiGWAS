@@ -4,7 +4,7 @@
 # 
 
 # Remove previous installations
-sed "/multiGWAS/d" -i ~/.bashrc
+system ("sed '/multiGWAS/d' -i ~/.bashrc")
 
 # Start installation
 MULTIGWAS_HOME = strsplit (getwd (), "/install")[[1]][1]
