@@ -104,13 +104,14 @@ createTableFromQuantitativeResults <- function (outFile, params, geneAction) {
 	#pValues  = results[,"P.value"] + 1e-10
 	pValues  = results[,"P.value"] 
 	m        = length (pValues)
-	adj       = adjustPValues (0.01, pValues, params$correctionMethod)
+	adj       = adjustPValues (params$significanceLevel, pValues, params$correctionMethod)
 	pValues   = adj$pValues
 	threshold = adj$threshold
 	scores    = -log10 (pValues)
 
 	# Set Columns
-	map <- read.csv ("out/map.csv", check.names=F)
+	#map <- read.csv ("out/map.csv", check.names=F)
+	map <- read.csv (params$mapFile, check.names=F)
 	rownames (map) = map [,1]
 	Marker <- as.character (results$SNP)
 	CHR <- map [Marker, 2]
@@ -180,7 +181,8 @@ createTableFromBinaryResults <- function (outFile, params, geneAction) {
 	scores    = -log10 (pValues)
 
 	# Set Columns
-	map <- read.table (file="out/map.tbl", sep="\t", check.names=F)
+	#map <- read.table (file="out/map.tbl", sep="\t", check.names=F)
+	map <- read.csv (params$mapFile, check.names=F)
 	rownames (map) = map [,1]
 	SNP <- as.character (results$SNP)
 	CHR <- map [SNP, 2]

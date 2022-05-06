@@ -63,9 +63,9 @@ runToolGwaspoly <- function (params) {
 		else
 			snpModels = modelsDiplo
 	else  # But if user specifided just one model
-		if (params$geneAction == "dominant" & params$ploidy==4)
+		if (params$geneAction == "dominant" && params$ploidy==4)
 			snpModels = c ("1-dom", "2-dom")
-		else if (params$geneAction == "dominant" & params$ploidy==2)
+		else if (params$geneAction == "dominant" && params$ploidy==2)
 			snpModels = c ("1-dom")
 		else
 			snpModels = c(params$geneAction)

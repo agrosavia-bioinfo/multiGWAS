@@ -43,7 +43,7 @@ runToolGapit <- function (params) {
 	}else if (params$geneAction=="dominant") {
 		scoresMgwas = runGapit ("dominant", params$genotypeFile, params$phenotype, scoresFile, params)
 	}else if (params$geneAction %in% c("all", "automatic")){
-		res = mclapply (c("additive","dominant"), runGapit, params$genotypeFile, params$phenotype, scoresFile, params, mc.cores=NCORES)
+		res = mclapply (c("additive","dominant"), runGapit, params$genotypeFile, params$phenotype, scoresFile, params, mc.cores=1)
 		scoresMgwas  = do.call (rbind.data.frame, res)
 	}
 

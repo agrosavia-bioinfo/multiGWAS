@@ -55,6 +55,7 @@ main <- function ()
 # Get common sample names
 #-------------------------------------------------------------
 filterByCommonMarkersSamples <- function (genotypeFile, phenotypeFile) {
+	msgmsg ("Filtering by missing markers and samples...")
 	geno     = read.csv (file=genotypeFile, check.names=F)
 	pheno    = read.csv (file=phenotypeFile, check.names=F)
 
@@ -74,15 +75,18 @@ filterByCommonMarkersSamples <- function (genotypeFile, phenotypeFile) {
 	# Create new geno, pheno
 	genoCommon     = geno  [,c (colnames(geno)[1:3], commonSamples)]
 	phenoCommon    = pheno [pheno[,1] %in% commonSamples,]
+	mapCommon      = genoCommon [, 1:3]
 	trait          = colnames(phenoCommon)[2]
 
-	genoCommonFile     = addLabel (genotypeFile, "COMMON")
-	phenoCommonFile    = addLabel (phenotypeFile, "COMMON")
+	genoCommonFile   = addLabel (genotypeFile, "COMMON")
+	phenoCommonFile  = addLabel (phenotypeFile, "COMMON")
+	mapCommonFile    = sprintf ("%s/%s", dirname (genoCommonFile), "filtered-map-COMMON.csv")
 
-	write.csv (file=genoCommonFile, genoCommon, quote=F, row.names=F)
-	write.csv (file=phenoCommonFile, phenoCommon, quote=F, row.names=F)
+	write.csv (file=genoCommonFile, genoCommon, row.names=F)
+	write.csv (file=phenoCommonFile, phenoCommon, row.names=F)
+	write.csv (mapCommon, mapCommonFile, row.names=F)
 
-	return (list (genotypeFile=genoCommonFile, phenotypeFile=phenoCommonFile, trait=trait, genotype=genoCommon))
+	return (list (genotypeFile=genoCommonFile, phenotypeFile=phenoCommonFile, mapFile=mapCommonFile, trait=trait))
 }
 
 
@@ -150,7 +154,7 @@ old_filterByMissingMarkersAndSamples <- function (genotypeFile, callRateSNPs, ca
 	badSNPs      = which (propsSNPs > callRateSNPs)
 	badSamples   = which (propsSamples > callRateSamples)
 
-	if (length (badSNPs) > 0 & length (badSamples) > 0) {
+	if (length (badSNPs) > 0 && length (badSamples) > 0) {
 		noMissingGeno = geno [-badSNPs, -badSamples]
 		missingGeno   = geno [badSNPs, badSamples]
 
@@ -163,7 +167,7 @@ old_filterByMissingMarkersAndSamples <- function (genotypeFile, callRateSNPs, ca
 
 		outFile = addLabel (genotypeFile, "MISSING-SAMPLES")
 		write.csv (names (badSamples), outFile, quote=F, row.names=F)
-	}else  if (length (badSNPs) > 0 & length (badSamples) == 0) {
+	}else  if (length (badSNPs) > 0 && length (badSamples) == 0) {
 		noMissingGeno = geno [-badSNPs,]
 		missingGeno   = geno [badSNPs,]
 
@@ -173,7 +177,7 @@ old_filterByMissingMarkersAndSamples <- function (genotypeFile, callRateSNPs, ca
 
 		outFile = addLabel (genotypeFile, "MISSING-SNPs")
 		write.csv (names (badSNPs), outFile, quote=F, row.names=F)
-	}else  if (length (badSNPs) == 0 & length (badSamples) > 0) {
+	}else  if (length (badSNPs) == 0 && length (badSamples) > 0) {
 		noMissingGeno = geno [,-badSamples]
 		noMissingGenoFile  = addLabel (genotypeFile, "noMISSING")
 		write.csv (noMissingGeno, noMissingGenoFile, quote=F, row.names=F)
@@ -205,26 +209,25 @@ imputeNumericMatrix <- function (numericMatrix) {
 }
 
 #-------------------------------------------------------------
-# Convert GWASpoly format to GAPIT format: numeric and map matrix
+# Convert GWASpoly phenotype fto GAPIT format
 #-------------------------------------------------------------
-gwaspolyToGapitFormat <- function (genotypeFile, phenotypeFile, geneAction, FILES=F) 
-{
-	# Convert phenotype
+gwaspolyToGapitPhenotype <- function (phenotypeFile) {
 	pheno      = read.csv (phenotypeFile, check.names=F)
 	phenoGapit = data.frame (taxa=pheno[,1], pheno [,2, drop=F], check.names=F)
 
-	# Convert genotype to numeric
-	num     = ACGTToNumericGenotypeFormat (genotypeFile, 4, MAP=T) 
-	genoNum = num$genoNum
-	genoMap = num$map
+	gapitPhenoFile = addLabel (phenotypeFile, "GAPIT")
+	write.csv (phenoGapit, gapitPhenoFile, row.names=F)
 
-	# Common geno and pheno
-	common      = commonGenoPheno (genoNum, phenoGapit)
-	genoCommon  = common$geno
-	phenoCommon = common$pheno
-	
-	genoNumTetra = genoCommon [,-c(2,3)]
-	genoMap      = genoMap [,-c(4,5)]
+	return (gapitPhenoFile)
+}
+#-------------------------------------------------------------
+# Convert GWASpoly genotype to GAPIT format: numeric and map matrix
+#-------------------------------------------------------------
+gwaspolyToGapitGenotype <- function (genotypeFile, geneAction, FILES=F) {
+	# Convert genotype to numeric
+	num          = ACGTToNumericGenotypeFormat (genotypeFile, 4, MAP=T) 
+	genoNumTetra = num$genoNum [,-c(2,3)]
+	genoMap      = num$map [,-c(4,5)]
 
 	genoNumTetraImputed  = imputeNumericMatrix (genoNumTetra)
 	colnames (genoMap) = c("SNP", "Chromosome", "Position")
@@ -249,7 +252,7 @@ gwaspolyToGapitFormat <- function (genotypeFile, phenotypeFile, geneAction, FILE
 		genoNumGapit = data.frame (genoNumGapit [,1,drop=F], genoNumGapitValues, check.names=F)
 		gapitNumFile = addLabel (genotypeFile, "GAPIT-NUM-DOM")
 		write.csv (genoNumGapit, gapitNumFile, quote=F, row.names=F)
-	}else if (geneAction=="dominantAll") {
+	}else if (geneAction=="all") {
 		genoNumGapitValues = genoNumGapit [,-1] 
 
 		# 0,2 -> 0, 1->1
@@ -279,15 +282,12 @@ gwaspolyToGapitFormat <- function (genotypeFile, phenotypeFile, geneAction, FILE
 		genoNumGapitValues [genoNumGapitValues==2] = 1
 		genoNumGapit = data.frame (genoNumGapit [,1,drop=F], genoNumGapitValues, check.names=F)
 		gapitNumFile = addLabel (genotypeFile, "GAPIT-NUM-REC")
+		write.csv (genoNumGapit, gapitNumFile, quote=F, row.names=F)
 	}
-
-	gapitPhenoFile = addLabel (phenotypeFile, "GAPIT")
-	write.csv (phenoCommon, gapitPhenoFile, quote=F, row.names=F)
 
 	gapitMapFile = addLabel (genotypeFile, "GAPIT-MAP")
 	write.csv (genoMap, gapitMapFile, quote=F, row.names=F)
-
-	return (list (geno=gapitNumFile, pheno=gapitPhenoFile, map=gapitMapFile))
+	return (list (geno=gapitNumFile, map=gapitMapFile))
 }
 
 #-------------------------------------------------------------
@@ -603,11 +603,13 @@ convertVCFtoACGTByVCFR <- function (filename, outFilename="") {
 #------------------------------------------------------------------------------
 # Convert genotye from plink (.ped, .map) to VCF (Variant Call Format)
 #------------------------------------------------------------------------------
+
 plinkToVCFFormat <- function (plinkFile) {
 	#plinkPrefix = strsplit (plinkFile, split="[.]")[[1]][1]
-	cmm = sprintf ("plink --file %s --allow-extra-chr --recode vcf-fid --out %s", plinkFile, plinkFile)
+	tasselFile = gsub ("PLINK", "TASSEL", plinkFile)
+	cmm = sprintf ("plink --file %s --allow-extra-chr --recode vcf-fid --out %s", plinkFile, tasselFile)
 	runCommand (cmm)
-	outFile = paste0 (plinkFile, ".vcf")
+	outFile = paste0 (tasselFile, ".vcf")
 
 	return (outFile)
 }
@@ -657,10 +659,9 @@ gwaspolyToTasselPhenotype<- function (gwaspPhenotypeFile)
 #------------------------------------------------------------------------------
 ## Format gwaspoly phenotype to plink format
 #------------------------------------------------------------------------------
-gwaspolyToPlinkPhenotype <- function (gwaspPhenoFile) 
-{
+gwaspolyToPlinkPhenotype <- function (gwaspPhenoFile) {
 	#msgmsg ("    >>>> Creating plink phenotype...")
-	phenotype = read.csv (file=gwaspPhenoFile, header=T, check.names=F)
+	phenotype = read.csv (file=gwaspPhenoFile, check.names=F)
 	idNames = as.character (phenotype [,1])
 
 	samples = phenotype [,1]
@@ -680,14 +681,14 @@ gwaspolyToPlinkPhenotype <- function (gwaspPhenoFile)
 # Gwasp to plink format (.ped .map)
 #------------------------------------------------------------------------------
 gwaspolyToPlinkGenotype <- function (genotypeFile) {
-	plinkFile     = strsplit (genotypeFile, "[.]")[[1]][1]
+	plinkFile     = addLabel (genotypeFile, "PLINK")
+	plinkFile     = strsplit (plinkFile, "[.]")[[1]][1]
 	markersIdsMap = createPlinkMapFromGwaspolyGenotype (genotypeFile, plinkFile)
 	plinkFile     = createPlinkPedFromGwaspolyGenotype (genotypeFile, plinkFile)
 	cmm = paste ("plink --file", plinkFile, "--allow-extra-chr --make-bed", "--out", plinkFile)
 	runCommand (cmm, "log-filtering.log")
 	#plinkFile     = createPlinkPedFromGwaspolyGenotype (genotypeFile, markersIdsMap)
 	return (plinkFile)
-
 }
 #----------------------------------------------------------
 # Get ref/alt alleles for SNPs
@@ -789,8 +790,7 @@ createPlinkPedFromGwaspolyGenotype <- function (gwaspGenoFile, plinkFile)
 
 #----------------------------------------------------------
 #----------------------------------------------------------
-gwaspTetraToDiploGenotype <- function (genotypeFile) 
-{
+gwaspTetraToDiploGenotype <- function (genotypeFile) {
 	#msgmsg ("Converting genotype from tetraploid to diploid...")
 	genotype = read.csv (genotypeFile, header=T,check.names=F)
 	map      = genotype [,1:3] 
@@ -829,8 +829,7 @@ impute.mode <- function(x) {
 #----------------------------------------------------------
 # Add tabs to alleels changign AG --> A	G
 #----------------------------------------------------------
-tetraToDiplos <- function (allelesMat, refAltAlleles) 
-{
+tetraToDiplos <- function (allelesMat, refAltAlleles) {
 	alls <- allelesMat
 	if (file.exists ("tmp-diplosMatrix.tbl")) {
 		msgmsg ("    >>>> Loading diplos matrix...")
@@ -935,7 +934,9 @@ ACGTToNumericGenotypeFormat <- function (genotypeFile, ploidy, MAP=F)
 	tmp     <- apply(markers,1,getReferenceAllele)
 	map     <- data.frame(Marker=geno[,1],Chrom=factor(geno[,2],ordered=T),Position=geno[,3], 
 						  Ref=tmp[1,], Alt=tmp[2,], stringsAsFactors=F)
-	write.csv (map, "out/map.csv", quote=F, row.names=F)
+	# cache change: Remove fixed out dir
+	#write.csv (map, "out/map.csv", quote=F, row.names=F)
+
 	map$Ref <- tmp[1,]
 	map$Alt <- tmp[2,]
 
@@ -1022,8 +1023,7 @@ numericToACGTFormatAlleles <- function (alleles, map)
 ##-------------------------------------------------------------
 # Convert gwaspoly genotye from numeric tetra to numeric diplo
 #-------------------------------------------------------------
-numericTetraToNumericDiploGenotype <- function (genotypeFile) 
-{
+numericTetraToNumericDiploGenotype <- function (genotypeFile) {
 	genotype   <- read.csv (genotypeFile, header=T, check.names=F)
 	map      = genotype [,1:3]
 	alleles  = genotype [,-c(2,3)]
@@ -1182,8 +1182,8 @@ view <- function (data, n=5,m=6, outPrefix="") {
 	}else {
 		dimensions = paste0 (unlist (dim (data)),sep=c(" x ",""))
 		message (name, class(data), " : (", paste0 (dimensions),")")
-		if (n==0 | nrow (data) < 5) n = nrow(data)
-		if (m==0 | ncol (data) < 6) m = ncol(data)
+		if (n==0 || nrow (data) < 5) n = nrow(data)
+		if (m==0 || ncol (data) < 6) m = ncol(data)
 		print (data[1:n,1:m])
 	}
 	write.csv (data, paste0("x-", outPrefix,"-", filename, ".csv"), quote=F, row.names=T)

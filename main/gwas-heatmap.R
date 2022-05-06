@@ -23,6 +23,11 @@ main <- function () {
 # create SNP profiles for a list of SNPS
 #----------------------------------------------------------
 createHeatmapForSNPList <- function (outputDir, genoFileACGT, genoFileNUM, phenoFile, snpList, ploidy) {
+	if (length (snpList)==0) {
+		msgmsg ("There are no SNPs for heatmaps...")
+		return (NA)
+	}
+
 	outName = paste0 (outputDir, "/out-SNPProfile") 
 
 	genotypeACGT    <- read.csv (genoFileACGT, na.strings = "NA", dec = ".", strip.white = TRUE, check.names=F )
