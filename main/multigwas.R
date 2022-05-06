@@ -37,7 +37,7 @@ usageInstructions <- function () {
 # Main for multi traits
 #-------------------------------------------------------------
 main <- function () {
-	message ("MultiGWAS 1.1 is running!\n")
+	message ("MultiGWAS 1.3 is running!\n")
 	args = commandArgs(trailingOnly = TRUE)
 	if (length (args) < 1) {
 		message (usageInstructions())
