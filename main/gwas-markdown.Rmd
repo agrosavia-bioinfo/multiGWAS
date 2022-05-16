@@ -135,7 +135,7 @@ knitr::include_graphics (paste0 (inputDir, "/out-multiGWAS-manhattanQQ-plots.png
 ```
 
 # Chord diagrams for SNPs by chromosome
-Chord diagrams are used in MultiGWAS to highlight nearby SNPs found on the same chromosome. These SNPs may have been identified simultaneously by multiple GWAS packets, which can be interpreted as a possible strong association, as in the Manhattan charts, where these associations form clean peaks with multiple SNPs displaying the same signal.
+Chord diagrams are used in MultiGWAS to highlight nearby SNPs found on the same chromosome. These SNPs may have been identified simultaneously by multiple GWAS tools, which can be interpreted as a possible strong association, as in the Manhattan charts, where these associations form clean peaks with multiple SNPs displaying the same signal.
 
 Next, we show the chord diagram for the shared SNPs shown in the Venn diagram of the best-ranked SNPs (Section 2.2).
 

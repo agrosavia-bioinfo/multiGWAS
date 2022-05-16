@@ -37,15 +37,6 @@ readCheckConfigParameters <- function (paramsFile) {
 	params$tools            = tolower (params$tools) 
 	params$geneAction       = tolower (params$geneAction) 
 
-	# Create output dir, check input files, and copy files to output dir
-	runningDir   = paste0 ("out-", strsplit (paramsFile, split="[.]") [[1]][1])
-	createDir (runningDir)
-
-	copyFilesToRunningDir (params, runningDir)
-
-	# Change to the output dir and set global runningDir 
-	setwd (runningDir)
-	params$runningPath = getwd()
 	return (params)
 }
 
@@ -137,23 +128,6 @@ checkInputFiles <- function (paramsFile) {
 
 	return (params)
 
-}
-
-#----------------------------------------------------------
-# Copy input files to running dir
-# Remove path and copy files to trait directory (runningDir)
-#----------------------------------------------------------
-copyFilesToRunningDir <- function (params, runningDir) {
-	runCommand(sprintf ("cp %s %s", params$genotypeFile, runningDir))
-	params$genotypeFile  = basename (params$genotypeFile)
-
-	runCommand(sprintf ("cp %s %s", params$phenotypeFile, runningDir))
-	params$phenotypeFile = basename (params$phenotypeFile)
-
-	if (tolower (params$genotypeFormat) %in% c("matrix", "fitpoly", "updog")) {
-		file.copy (params$mapFile, runningDir)
-		params$mapFile = basename (params$mapFile)
-	}
 }
 
 #----------------------------------------------------------

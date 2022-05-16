@@ -57,11 +57,11 @@ createHeatmapForSNP <- function (outputDir, genotypeACGT, genotypeNUMERIC, pheno
 	trait       = colnames (phenotype) [2]
 
 	# Get samples for marker in both matrices: Numeric and ACGT
-	samplesMarker          = t(genotypeNUMERIC[genotypeNUMERIC[,1]==snpId,])
-	samplesMarkerMatrixNUM = as.matrix(samplesMarker[-1:-3,])
+	samplesMarkerNUM       = t(genotypeNUMERIC[genotypeNUMERIC[,1]==snpId,])
+	samplesMarkerMatrixNUM = as.matrix(samplesMarkerNUM[-1,])
 
-	samplesMarker           = t(genotypeACGT[genotypeACGT[,1]==snpId,])
-	samplesMarkerMatrixACGT = as.matrix(samplesMarker[-1:-3,])
+	samplesMarkerACGT       = t(genotypeACGT[genotypeACGT[,1]==snpId,])
+	samplesMarkerMatrixACGT = as.matrix(samplesMarkerACGT[-1:-3,])
 
 	# Count genotype types
 	one.hot<-function(sqnce, alphabet){

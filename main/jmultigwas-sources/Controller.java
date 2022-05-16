@@ -132,6 +132,7 @@ class Controller extends JFrame {
         //browseFile(htmlFilename, reportDir);
 
         writeLine("Report of results in: <a href='file://" + htmlFilename + "'>" + htmlFilename + "</a>", "html");
+        browseFile (htmlFilename);
     
         // Set tabs 
         tabResults.showResults(htmlFilename);
@@ -152,11 +153,14 @@ class Controller extends JFrame {
     public void browseFile (URL url){
         browseFileUsingRuntime (url.toString());
     }
+    public void browseFile (String urlString){
+        browseFileUsingRuntime (urlString);
+    }
 
     public void browseFileUsingRuntime(String urlString) {
         try {
             Runtime rt = Runtime.getRuntime();
-            String[] browsers = {"chromium-browser", "google-chrome", "firefox", "falkon", "midori","epiphany", "mozilla", "konqueror", "opera"};
+            String[] browsers = {"xdg-open", "chromium-browser", "google-chrome", "firefox", "falkon", "midori","epiphany", "mozilla", "konqueror", "opera","arora"};
             StringBuffer cmd = new StringBuffer();
             for (int i = 0; i < browsers.length; i++) {
                 if (i == 0) {
@@ -167,6 +171,7 @@ class Controller extends JFrame {
             }
             // If the first didn't work, try the next browser and so on
             String cmdString[] = new String[] { "sh", "-c", cmd.toString() };
+            tabOutputs.writeLine ("Testing browsers:" + cmdString,"");
             rt.exec(cmdString);
             
         } catch (Exception e1) {
@@ -205,6 +210,7 @@ class Controller extends JFrame {
 
     public void writeLine(String s, String type) {
         tabOutputs.writeLine(s, type);
+        System.out.println (s);
     }
 
     private void OUT(String string) {

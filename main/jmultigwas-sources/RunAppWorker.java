@@ -62,9 +62,9 @@ public class RunAppWorker extends SwingWorker<Void, String> {
 
                 String line;
                 while ((line = r.readLine()) != null) {
-                    System.out.println(line);
+                   
                     controller.writeLine (line,"");
-                    if (line.contains("Moving")) {
+                    if (line.contains("END OF EXECUTION")) {
                         //keywordFound = true;
                         break;
                     }

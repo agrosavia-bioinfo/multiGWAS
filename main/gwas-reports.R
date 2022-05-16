@@ -68,7 +68,6 @@ main <- function () {
 
 	listOfResultsFile = tools1
 
-	print (params)
 	createReports (tools1, params)
 }
 
@@ -91,7 +90,7 @@ createReports <- function (listOfResults, params) {
 	# Define filenames for outputs
 	fileBestScores        = paste0 (outputDir,  "/out-multiGWAS-scoresTable-best.scores")
 	fileSignificantScores = paste0 (outputDir,  "/out-multiGWAS-scoresTable-significants.scores")
-	fileSNpsHighLD        = paste0 (outputDir, "/out-multiGWAS-SNPsHighLD-table.csv")
+	SNPsHighLDFile        = paste0 ("out", "/out-SNPsHighLD-Table.csv")
 
 	msgmsg ("Writing input config parameters...")
 	config = writeConfigurationParameters (inputDir, outputDir)
@@ -121,7 +120,7 @@ createReports <- function (listOfResults, params) {
 	createChordDiagramSharedSNPs (fileBestScores)
 
 	# Create table for SNPs in high LD
-	createSNPsHighLDOutputs (params$SNPsHighLDFile, outputDir)
+	createSNPsHighLDOutputs (SNPsHighLDFile, outputDir)
 
 	# Call to rmarkdown report
 	createMarkdownReport (config)
@@ -160,21 +159,21 @@ scoreMarkers <- function (scores) {
 
 	# Significance score: 1 for significants, 0 otherwise
 	valuesSign   = ifelse (scores$SIGNIFICANCE, 1,0)
-	scoresSign   = cbind (scoresRepl, ScoresSign=valuesSign);#view (scoresSign)
+	scoresSign   = cbind (scoresRepl, ScoresSign=valuesSign)
 
 	# GC score: Measures closenes of Genomic Control (GC) to 1
 	valuesGC     = 1 - abs (1-scores$GC)
-	scoresGC     = cbind (scoresSign, ScoresGC=valuesGC);#view (scoresGC)
+	scoresGC     = cbind (scoresSign, ScoresGC=valuesGC)
 
 	# Difference score: Measures difference between threshold and Score 
 	# It's not useful if it isn't normalized by each tool
 	#valuesDiff   = scores$SCORE - scores$THRESHOLD
-	#scoresDiff   = cbind (scoresGC, ScoreDiff=valuesDiff);#view (scoresDiff)
+	#scoresDiff   = cbind (scoresGC, ScoreDiff=valuesDiff)
 
 	sc = scoresGC
-	globalScore = 0.8*sc[,"ScoresGC",drop=F] + 0.1*sc[,"ScoresSign",drop=F] + 0.1*sc[,"ScoresRepl", drop=F];#view (valuesRepl)
+	globalScore = 0.8*sc[,"ScoresGC",drop=F] + 0.1*sc[,"ScoresSign",drop=F] + 0.1*sc[,"ScoresRepl", drop=F]
 
-	gscoreTable = cbind (GSCORE=globalScore[,1], scoresGC);#view (gscoreTable)
+	gscoreTable = cbind (GSCORE=globalScore[,1], scoresGC)
 	gscoreTable = gscoreTable %>% arrange (desc(GSCORE))
 
 	gscoreTable$ScoresGC=NULL
@@ -196,7 +195,9 @@ createVennDiagrams <- function (results, snpTables, gwasModel, outputDir, params
 	commonSign = markersVennDiagramsLD (results, snpTables$significants, gwasModel, "Significants", fileVennDiagramSign)
 	
 	# Check if there is any "scoresLDFile" in results
+	msgmsg ("Checking if there is any 'scoresLDFile' in results...")
 	if (any (sapply (results, function (res) !is.null (res$scoresLDFile)))) {
+		msgmsg ("scoresLDFile found...")
 		snpTables   = markersSummaryTableLD (results, params, LD=T)
 		commonLD   = markersVennDiagramsLD (results, snpTables$best, gwasModel, "Best", fileVennDiagramLD, LD=T)
 	}
@@ -207,15 +208,11 @@ createVennDiagrams <- function (results, snpTables, gwasModel, outputDir, params
 # By now, only copy table to report dir to show as knit table
 #-------------------------------------------------------------
 createSNPsHighLDOutputs <- function (SNPsHighLDFile, outputDir) {
-	if (is.null (SNPsHighLDFile))
+	if (file.exists (SNPsHighLDFile)==FALSE)
 		return()
 
 	msgmsg ("Copying table of SNPs in high LD...")
-	msgmsg (SNPsHighLDFile)
-	msgmsg (outputDir)
 	file.copy (SNPsHighLDFile, outputDir)
-
-
 }
 #-------------------------------------------------------------
 # Create manhattan plots for each tool
@@ -506,8 +503,8 @@ markersSummaryTableLD <- function (results, params, LD=FALSE) {
 		scoresFile = if (LD==TRUE) res$scoresLDFile else res$scoresFile 
 
 		if (!is.null (scoresFile)) {
+			msgmsg ("Processing LD scores file: ", scoresFile)
 			data       = read.table (file=scoresFile, header=T, stringsAsFactors=F)
-			#data       = selectBestModel (data, nBest, TOOL, geneAction)
 			MODEL        = data$MODEL;
 			GC           = data$GC
 			SNP          = data$Marker

@@ -55,7 +55,7 @@ main <- function ()
 # Get common sample names
 #-------------------------------------------------------------
 filterByCommonMarkersSamples <- function (genotypeFile, phenotypeFile) {
-	msgmsg ("Filtering by missing markers and samples...")
+	msgmsg ("Filtering by common markers and samples...")
 	geno     = read.csv (file=genotypeFile, check.names=F)
 	pheno    = read.csv (file=phenotypeFile, check.names=F)
 
@@ -96,6 +96,7 @@ filterByCommonMarkersSamples <- function (genotypeFile, phenotypeFile) {
 #-------------------------------------------------------------
 filterByMissingMarkersAndSamples <- function (genotypeFile, callRateSNPs, callRateSamples) 
 {	
+	msgmsg ("Filtering by missing markers and samples...")
 	geno          = read.csv (file=genotypeFile, check.names=F)
 	allelesMatrix = geno [,-c(1:3)]
 	SNPs          = colnames (allelesMatrix)
@@ -223,10 +224,10 @@ gwaspolyToGapitPhenotype <- function (phenotypeFile) {
 #-------------------------------------------------------------
 # Convert GWASpoly genotype to GAPIT format: numeric and map matrix
 #-------------------------------------------------------------
-gwaspolyToGapitGenotype <- function (genotypeFile, geneAction, FILES=F) {
+gwaspolyToGapitGenotype <- function (genotypeFile, geneAction, FILES=F, cacheDir) {
 	# Convert genotype to numeric
-	num          = ACGTToNumericGenotypeFormat (genotypeFile, 4, MAP=T) 
-	genoNumTetra = num$genoNum [,-c(2,3)]
+	num          = ACGTToNumericGenotypeFormat (genotypeFile, 4, cacheDir) 
+	genoNumTetra = num$genoNum 
 	genoMap      = num$map [,-c(4,5)]
 
 	genoNumTetraImputed  = imputeNumericMatrix (genoNumTetra)
@@ -391,6 +392,7 @@ convertVCFToACGTByNGSEP <- function (filename, outFilename="")
 	outFilename = paste0 (stemName, "_GWASPoly.csv") # Added by NGSEP tool
 	geno = read.csv (outFilename, check.names=F)
 	geno = arrange (geno, Chrom, Position)
+	msgmsg ("Writing ACGT from VCF into: ", outFilename, "...")
 	write.csv (geno, outFilename, quote=F, row.names=F)
 	return (outFilename)
 }
@@ -921,9 +923,28 @@ convertVCFToGenodiveFormat <- function (genotypeFile) {
 
 #----------------------------------------------------------
 # Convert gwaspoly genotype from ACGT to numeric format
+# Return and write genotype with map info add ref/alt alleles
 #----------------------------------------------------------
-ACGTToNumericGenotypeFormat <- function (genotypeFile, ploidy, MAP=F) 
+ACGTToNumericGenotypeFormat <- function (genotypeFile, ploidy, cacheDir) 
 {
+	msgmsg ("Converting ACGT to numeric format...")
+	genoNumFile = addLabel (genotypeFile, "NUM")
+	genoMapFile = addLabel (genotypeFile, "MAP")
+	if (DEBUG) {
+		cacheNumFile = sprintf ("%s/%s", cacheDir, basename (genoNumFile))
+		cacheMapFile = sprintf ("%s/%s", cacheDir, basename (genoMapFile))
+		if (file.exists (cacheNumFile)) {
+			msgmsg ("Loading numeric genotype from cache...")
+			geno      = read.csv (genotypeFile, check.names=F)
+			genoNum   = read.csv (cacheNumFile, check.names=F)
+			genoMap   = read.csv (cacheMapFile, check.names=F)
+			return (list(geno=geno, genoNum=genoNum, map=genoMap))
+		}
+		genoNumFile = sprintf ("%s/%s", cacheDir, basename (genoNumFile))
+	}
+
+	msgmsg ("Calculating numeric genotype...")
+
 	NCORES = ifelse (detectCores()>1, detectCores()-1, 1)
 	geno = read.csv (file=genotypeFile, header=T, check.names=F)
 
@@ -931,14 +952,13 @@ ACGTToNumericGenotypeFormat <- function (genotypeFile, ploidy, MAP=F)
 	sampleNames       = colnames (geno[,-(1:3)])
 	rownames(markers) = geno[,1]
 
+	msgmsg ("Getting reference/alternate alleles...")
 	tmp     <- apply(markers,1,getReferenceAllele)
-	map     <- data.frame(Marker=geno[,1],Chrom=factor(geno[,2],ordered=T),Position=geno[,3], 
+	genoMap <- data.frame(Marker=geno[,1],Chrom=factor(geno[,2],ordered=T),Position=geno[,3], 
 						  Ref=tmp[1,], Alt=tmp[2,], stringsAsFactors=F)
-	# cache change: Remove fixed out dir
-	#write.csv (map, "out/map.csv", quote=F, row.names=F)
 
-	map$Ref <- tmp[1,]
-	map$Alt <- tmp[2,]
+	genoMap$Ref <- tmp[1,]
+	genoMap$Alt <- tmp[2,]
 
 	#>>>> Convert all genotypes of a marker row from ACGT to Num
 	acgtToNum <- function(x){
@@ -949,7 +969,7 @@ ACGTToNumericGenotypeFormat <- function (genotypeFile, ploidy, MAP=F)
 	}
 	
 	# Convert All ACGT matrix to Num
-	matRefMarkers   = cbind(map$Ref,markers)
+	matRefMarkers   = cbind(genoMap$Ref,markers)
 	matTransposed   = t(matRefMarkers)
 	#ACGTList        = mclapply(seq_len(ncol(matTransposed)), function(i) matTransposed[,i],mc.cores=NCORES)
 	ACGTList        = lapply(seq_len(ncol(matTransposed)), function(i) matTransposed[,i])
@@ -960,16 +980,12 @@ ACGTToNumericGenotypeFormat <- function (genotypeFile, ploidy, MAP=F)
 
 	tM              =  (t(numericMatrixM))
 	colnames (tM)   = sampleNames
+	genoNum         = data.frame (Marker=genoMap[,1], tM, check.names=F) # Check=FALSE names but not row names
 
-	newGeno     = data.frame (map[,1:3], tM, check.names=F) # Check=FALSE names but not row names
+	write.csv (genoNum, genoNumFile, row.names=F)
+	write.csv (genoMap, genoMapFile, row.names=F)
 
-	if (MAP == TRUE)
-		return (list(geno=geno, genoNum=newGeno, map=map))
-	else {
-		newGenoFile = addLabel (genotypeFile, "NUM")
-		write.csv (newGeno, newGenoFile, quote=F, row.names=F)
-		return (newGenoFile)
-	}
+	return (list(geno=geno, genoNum=genoNum, map=genoMap))
 }
 
 #----------------------------------------------------------
