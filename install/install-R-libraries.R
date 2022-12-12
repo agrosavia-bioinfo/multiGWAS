@@ -60,8 +60,7 @@ if (!"GWASpoly" %in% packagesInstalled)
 x=file.copy ("multiGWAS_profile.sh", "..", overwrite=T)
 
 message ("\n------------------------------------------\n")
-message ("Close the terminal to finish the installation process")
-message ("Then, open a new terminal and write: ")
-message ("multiGWAS")
+message ("For changes to take effect, close and re-open your current shell")
+message ("Then, write multigwas or jmultigwas")
 message ("\n------------------------------------------\n")
 

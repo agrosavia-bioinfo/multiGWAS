@@ -27,10 +27,10 @@ Table of Contents
       * [Correction for multiple testing](#correction-for-multiple-testing)
 <!--te-->
 
-# MultiGWAS Installation 
+# Installing MultiGWAS 
 MultiGWAS offers different installations: from sources, precompiled versions, and ready-to-use virtual machine and docker image. Specific instructions are given below.
 
-## Installation from sources
+## Installing from sources
 To install MultiGWAS from source on a Linux system (tested on Ubuntu 20.04), follow the instructions below: 
 
 ```
@@ -52,11 +52,12 @@ To install MultiGWAS from source on a Linux system (tested on Ubuntu 20.04), fol
 9. Test MultiGWAS command line interface by tiping:
     jmultigwas
 ```
-## Installation from precompiled libraries (Ubuntu 20.04, R 3.6) 
+
+## Installing from precompiled libraries (Ubuntu 20.04, R 3.6) 
 To install MultiGWAS with both precompiled R libraries and Java runtime, follow the instructions at:
 [https://github.com/agrosavia-bioinfo/MultiGWASpre](https://github.com/agrosavia-bioinfo/MultiGWASpre).
 
-## Installation from ready-to-use virtual machine and docker container
+## Installing from ready-to-use virtual machine and docker container
 MultiGWAS can be tested on any platform (Linux, OS X, Windows) by using either a VirtualBox virtual machine or a Docker container. In both, MultiGWAS has been installed with all its dependencies (Linux, R, R libraries, and Java). Both solutions are described at:
 [https://github.com/agrosavia-bioinfo/MultiGWAS-vm](https://github.com/agrosavia-bioinfo/MultiGWAS-vm).
 
