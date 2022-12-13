@@ -4,6 +4,7 @@
 # AUTHOR : Luis Garreta (lgarreta@agrosavia.co)
 # DATA   : feb/2020
 # LOG: 
+#	r5.3: Fixed get unique models in qqMGWAS
 #	r5.2: Fixed unused factors in gwasResults
 #	r5.1: Fixed chord diagram when no shared SNPs
 #	r5.0: Heuristic to select best gene action model
@@ -41,18 +42,21 @@ main <- function () {
 	source (paste0(HOME,"/main/gwas-preprocessing.R")) 
 
 	params = list ()
-	params$inputDir        = "out/"
-	params$genotypeFile    = "out/filtered-gwasp4-genotype.tbl"
-	params$phenotypeFile   = "out/filtered-gwasp4-phenotype.tbl"
-	params$genotypeNumFile = "out/filtered-gwasp4-genotype-NUM.csv"
+	params$inputDir         = "out/"
+	params$genotypeFile     = "out/filtered-gwasp4-genotype.tbl"
+	params$phenotypeFile    = "out/filtered-gwasp4-phenotype.tbl"
+	params$genotypeNumFile  = "out/filtered-gwasp4-genotype-NUM.csv"
 	params$outputDir        = "out/"
-	params$reportDir       = "report/"
-	params$gwasModel       = "naive"
-	params$nBest           = 10
-	params$ploidy          = 4
-	params$geneAction      = "additive"
+	params$reportDir        = "report/"
+	params$gwasModel        = "naive"
+	params$nBest            = 10
+	params$ploidy           = 4
+	params$geneAction       = "additive"
+	params$nonModelOrganism = FALSE
 
-	tools1 = list(list (tool="GWASpoly", scoresFile="out/tool-GWASpoly-scores-naive.csv")) 
+	tools1 = list(list (tool="GWASpoly", 
+						scoresFile="out/tool-GWASpoly-scores-Naive.csv",
+						scores=read.csv ("out/tool-GWASpoly-scores-Naive.csv", sep="\t"))) 
 
 	tools2 = list(list (tool="GWASpoly", scoresFile="out/tool-GWASpoly-scores-full.csv"), 
 				  list (tool="SHEsis", scoresFile="out/tool-SHEsis-scores-full.csv"))
@@ -68,7 +72,7 @@ main <- function () {
 
 	listOfResultsFile = tools1
 
-	createReports (tools1, params)
+	res = createReports (tools1, params)
 }
 
 #-------------------------------------------------------------
@@ -306,9 +310,9 @@ markersManhattanPlots <- function (listOfResultsFile, commonBest, snpTables, nBe
 #-------------------------------------------------------------
 handleChromosomeNames <- function (chrNames, params) {
 	# Check if non-model genotype (chromosomes renamed with "contig" prefix
-	if (params$nonModelOrganism==TRUE) 
+	if (params$nonModelOrganism==TRUE) {
 		chrs = gsub ("contig","", chrNames)
-	else {
+	}else {
 		# Check if all chromosome names are numeric
 		anyNonNumericChrom <- function (chrs) {
 			suppressWarnings (any (is.na (as.numeric (chrs))))
@@ -330,7 +334,8 @@ handleChromosomeNames <- function (chrNames, params) {
 # QQ plot
 #-------------------------------------------------------------
 qqMGWAS <- function(gwasResults, geneAction) {
-	models = levels (gwasResults$MODEL)
+	models = unique (gwasResults$MODEL)
+
 	#---- local fun -----
 	qqValues <- function (pValues) {
 		scores = -log10 (pValues)
@@ -791,6 +796,6 @@ createDir <- function (newDir) {
 # Call to main function (first lines)
 #-------------------------------------------------------------
 
-#source ("lglib06.R")
+#source ("lglib14.R")
 #main ()
 
