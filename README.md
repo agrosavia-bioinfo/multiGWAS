@@ -34,44 +34,44 @@ MultiGWAS offers different installations: from sources, precompiled versions, an
 To install MultiGWAS from source on a Linux system (tested on Ubuntu 20.04), follow the instructions below: 
 
 ```
-0. Open a linux console (or terminal)
-1. If not installed, install R (R>=3.6), Java, and git
+1. Open a linux console (or terminal)
+2. If not installed, install R (R>=3.6), Java, and git
     sudo apt install r-base-core default-jre git
-2. Download or clone the MultiGWAS repository 
+3. Download or clone the MultiGWAS repository 
     git clone https://github.com/agrosavia-bioinfo/multiGWAS.git
-3. Change to install directory:
-    cd install
-4. Run the bash script to install the necessary linux packages (it needs sudo privileges).
+4. Change to install directory:
+    cd multiGWAS/install
+5. Run the bash script to install the necessary linux packages (it needs sudo privileges).
     sh install-linux-packages.sh
-5. Execute the R script to install the necessary R libraries:
+6. Execute the R script to install the necessary R libraries:
     Rscript install-R-libraries.R
-6. Open a new terminal or load the new configuration by typing:
+7. Open a new terminal or load the new configuration by typing:
     source ~/.bashrc
-7. Test MultiGWAS command line interface by tiping:
-    multigwas 
 8. Test MultiGWAS command line interface by tiping:
+    multigwas 
+9. Test MultiGWAS command line interface by tiping:
     jmultigwas
 ```
 
 ## Installing from precompiled libraries
 To install MultiGWAS with precompiled R libraries (Ubuntu 22.04, R 4.1)  follow the instructions at:
 ```
-0. Open a linux console (or terminal)
-1. If not installed, install R (R>=4.1), Java, git, and unzip
+1. Open a linux console (or terminal)
+2. If not installed, install R (R>=4.1), Java, git, and unzip
     sudo apt install r-base-core default-jre git unzip
-2. Download or clone the MultiGWAS repository 
+3. Download or clone the MultiGWAS repository 
     git clone https://github.com/agrosavia-bioinfo/multiGWAS.git
-3. Change to install directory:
-    cd install
-4. Run the bash script to install the necessary linux packages (it needs sudo privileges).
+4. Change to install directory:
+    cd multiGWAS/install
+5. Run the bash script to install the necessary linux packages (it needs sudo privileges).
     sh install-linux-packages.sh
-5. Run the bash script to decompress precompiled R41 libraries:
+6. Run the bash script to decompress precompiled R41 libraries:
     sh install-R41-libraries.sh
-6. Open a new terminal or load the new configuration by typing:
+7. Open a new terminal or load the new configuration by typing:
     source ~/.bashrc
-7. Test MultiGWAS command line interface by tiping:
-    multigwas 
 8. Test MultiGWAS command line interface by tiping:
+    multigwas 
+9. Test MultiGWAS command line interface by tiping:
     jmultigwas
 ```
 
