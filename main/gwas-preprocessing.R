@@ -464,7 +464,7 @@ convertUpdogToKMatrix <- function (updogScoresFile)
 	#------------------------------------------------------
 
 	fitGenos      = read.csv (updogScoresFile)		
-	snpList       = levels (fitGenos$snp)
+	snpList       = unique (fitGenos$snp)
 	nCores        = ifelse (detectCores()>1, detectCores()-1, 1)
 	nCores = 1
 
@@ -505,7 +505,7 @@ convertFitpolyToKMatrix <- function (fitpolyScoresFile)
 	#------------------------------------------------------
 
 	fitGenos      = read.table (fitpolyScoresFile, sep="\t", header=T)		
-	snpList       = levels (fitGenos$MarkerName)
+	snpList       = unique (fitGenos$MarkerName)
 	nCores        = ifelse (detectCores()>1, detectCores()-1, 1)
 
 	outs          = mclapply (snpList, createMatrix, fitGenos, mc.cores=nCores)
